@@ -58,13 +58,12 @@ if __name__ == "__main__":
 
         # apertar a tecla da seta para o esquerda e depois enter, para fechar um popup que as vezes aparece
         actions = ActionChains(driver)
-        actions.send_keys(Keys.ARROW_RIGHT)  # seta para direita
+        actions.send_keys(Keys.ARROW_LEFT)  # seta para esquerda
         actions.send_keys(Keys.ENTER)        # tecla Enter
         actions.perform()
 
         time.sleep(5)
 
-        
         # 5. Fazer login
         if not fazer_login_selenium(driver, EMAIL, SENHA, URL_APP):
             raise Exception("Falha no login")
