@@ -8,6 +8,8 @@ from auth.fazer_login import fazer_login_selenium
 from modules.clicar_botao_shadow_por_texto import clicar_botao_shadow_por_texto
 from modules.clicar_botao_shadow_duplo_iframe import clicar_botao_shadow_duplo_iframe
 from modules.tirar_screenshot import tirar_screenshot
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 if __name__ == "__main__":
     
@@ -53,6 +55,15 @@ if __name__ == "__main__":
             raise Exception("Botão OK não encontrado")
     
         time.sleep(5)
+
+        # apertar a tecla da seta para o esquerda e depois enter, para fechar um popup que as vezes aparece
+        actions = ActionChains(driver)
+        actions.send_keys(Keys.ARROW_RIGHT)  # seta para direita
+        actions.send_keys(Keys.ENTER)        # tecla Enter
+        actions.perform()
+
+        time.sleep(5)
+
         
         # 5. Fazer login
         if not fazer_login_selenium(driver, EMAIL, SENHA, URL_APP):
