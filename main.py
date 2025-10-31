@@ -1,7 +1,7 @@
 import time
 import os
 from modules.centro_de_custo import automation_centro_de_custo
-from auth.login_manager import autenticar, url_sistema
+from auth.login_manager import autenticar
 from modules.calcular_competencia import calcular_competencia
 from config.config_driver import setup_driver
 from modules.clicar_botao_shadow_dom import clicar_botao_shadow_dom
@@ -11,6 +11,7 @@ from modules.clicar_botao_shadow_duplo_iframe import clicar_botao_shadow_duplo_i
 from modules.tirar_screenshot import tirar_screenshot
 from modules.clicar_menu_item_direto import clicar_menu_item_direto
 from modules.abrir_aplicativo_webagent import abrir_aplicativo_webagent
+from modules.fechar_aplicativo_webagent import fechar_aplicativo_webagent
 
 if __name__ == "__main__":
     
@@ -208,5 +209,8 @@ if __name__ == "__main__":
         if driver:
             print("\n🔚 Fechando driver...")
             driver.quit()
+            
+        # Fechar o aplicativo
+        fechar_aplicativo_webagent("web-agent-windows-x64.exe") 
     
     input("\nPressione Enter para finalizar...")
