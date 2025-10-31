@@ -8,6 +8,7 @@ from auth.fazer_login import fazer_login_selenium
 from modules.clicar_botao_shadow_por_texto import clicar_botao_shadow_por_texto
 from modules.clicar_botao_shadow_duplo_iframe import clicar_botao_shadow_duplo_iframe
 from modules.tirar_screenshot import tirar_screenshot
+from modules.clicar_menu_item_direto import clicar_menu_item_direto
 
 if __name__ == "__main__":
     
@@ -114,6 +115,65 @@ if __name__ == "__main__":
             print(f"📄 Info do iframe: {info}")
             
             raise Exception("Botão Entrar não encontrado")
+
+        print("\n🔍 DEBUG: Analisando estrutura Shadow DOM...")
+
+        debug_script = """
+            function analyzeAllShadows(root, level = 0, path = 'document') {
+                let indent = '  '.repeat(level);
+                let results = [];
+                
+                // Analisar elementos no nível atual
+                let menuItems = root.querySelectorAll('wa-menu-item');
+                if (menuItems.length > 0) {
+                    results.push(indent + `📍 Encontrados ${menuItems.length} wa-menu-item em ${path}`);
+                    menuItems.forEach((item, idx) => {
+                        let caption = item.getAttribute('caption') || '';
+                        let id = item.getAttribute('id') || '';
+                        let text = item.textContent.trim().substring(0, 50);
+                        results.push(indent + `  [${idx}] caption="${caption}" id="${id}" text="${text}"`);
+                    });
+                }
+                
+                // Buscar em todos os shadow roots
+                let elements = root.querySelectorAll('*');
+                for (let i = 0; i < elements.length; i++) {
+                    let el = elements[i];
+                    if (el.shadowRoot) {
+                        let tagName = el.tagName.toLowerCase();
+                        let elId = el.id ? `#${el.id}` : '';
+                        results.push(indent + `🌑 Shadow encontrado: <${tagName}${elId}>`);
+                        
+                        // Recursão
+                        let childResults = analyzeAllShadows(
+                            el.shadowRoot, 
+                            level + 1, 
+                            `${path} > ${tagName}${elId} (shadow)`
+                        );
+                        results = results.concat(childResults);
+                    }
+                }
+                
+                return results;
+            }
+            
+            return analyzeAllShadows(document).join('\\n');
+        """
+
+        resultado_debug = driver.execute_script(debug_script)
+        print("\n📊 ESTRUTURA ENCONTRADA:")
+        print(resultado_debug)
+        print("\n" + "="*60)
+            
+        # Opção 1: Por ID (mais confiável)
+        if clicar_menu_item_direto(driver, menu_id="COMP3072"):
+            print("✅ Menu aberto!")
+            time.sleep(2)
+
+        # Opção 2: Por texto do caption (mais flexível)
+        if clicar_menu_item_direto(driver, caption_texto="Relatorios"):
+            print("✅ Menu aberto!")
+            time.sleep(2)
         
         # 10. Chamar automação de centro de custo
         print("🏢 Iniciando automação de centro de custo...")
