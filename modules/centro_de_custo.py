@@ -11,7 +11,7 @@ from config.list_filial import LISTA_FILIAIS
 from modules.clicar_botao_shadow_dom import clicar_botao_shadow_dom
 from modules.clicar_menu_item_direto import clicar_menu_item_direto
 from modules.clicar_botao_shadow_por_texto import clicar_botao_shadow_por_texto
-from modules.clicar_input_shadow import clicar_input_shadow
+from modules.clicar_input_shadow import clicar_input_shadow, preencher_input_shadow
 
 
 def automation_centro_de_custo (competencia, driver):
@@ -22,45 +22,34 @@ def automation_centro_de_custo (competencia, driver):
     print("🚀 INICIANDO AUTOMAÇÃO DE CENTRO DE CUSTO")
     print("=" * 60)
     
-    # Focar na janela do navegador (assumindo que já está aberta)
-
-    # Clicar no botão "Centro de Custo" usando reconhecimento de imagem
-    # Opção 1: Por ID (mais confiável)
+    # Clicar no menu "Cadastros"
     if clicar_menu_item_direto(driver, menu_id="COMP3009"):
         print("✅ Clicado em Cadastros através do botão!")
         time.sleep(2)
-    # # Opção 2: Por texto do caption (mais flexível)
-    # if clicar_menu_item_direto(driver, caption_texto="Cadastros"):
-    #     print("✅ Clicado em Cadastros através do caption!")
-    #     time.sleep(2)
 
     for filial in LISTA_FILIAIS:
         print(f"🏢 Processando filial: {filial}")
     
-        # Clicar no botão "Centro de Custo" usando reconhecimento de imagem
+        # Clicar no botão "Centro de Custo"
         if clicar_menu_item_direto(driver, menu_id="COMP3091"):
                 print("✅ Clicado em Centro de Custo através do botão!")
                 time.sleep(2)
-        # if clicar_menu_item_direto(driver, menu_id="Centro de Custo"):
-        #     print("✅ Clicado em Centro de Custo através do caption!")
-        #     time.sleep(2)
         
-        # da dois tabs para abrir o menu corretamente
+        # Navegar pelos campos (2 tabs)
         webdriver.ActionChains(driver).send_keys(Keys.TAB).perform()
         time.sleep(1)
         webdriver.ActionChains(driver).send_keys(Keys.TAB).perform()
         time.sleep(2)
 
-        # apagar o campo selecionado
+        # Apagar o campo selecionado
         webdriver.ActionChains(driver).send_keys(Keys.BACKSPACE).perform()
 
-
-        # digitar a filial
+        # Digitar a filial
         webdriver.ActionChains(driver).send_keys(filial).perform()
         time.sleep(2)
 
-        # selecionar o botão confirmar
-        # Método 1: Por atributo 'part'
+        # Clicar no botão "Confirmar"
+        # Método 1: Por id
         if clicar_botao_shadow_dom(driver, 'id', 'COMP4522',seletor_interno='button', descricao="Confirmar"):
             print("✅ Clicado em Confirmar através do botão!")
             time.sleep(2)
@@ -71,67 +60,100 @@ def automation_centro_de_custo (competencia, driver):
             time.sleep(2)
 
         time.sleep(8)
-        # selecionar a opção planilha
+
+        # Selecionar a opção "Planilha"
         if clicar_botao_shadow_dom(driver, 'id', 'COMP4528',seletor_interno='button', descricao="Planilha"):
             print("✅ Clicado em Planilha através do botão!")
             time.sleep(2)
-        # Método 2: Por caption
         else: 
             clicar_botao_shadow_por_texto(driver, 'Planilha')
             print("✅ Clicado em Planilha através do texto!")
             time.sleep(2)
 
         
-        # criar a variavel com o nome do arquivo
+        # Criar o nome do arquivo
         nome_arquivo = f"CENTRO_DE_CUSTO_{filial}_{competencia}.xlsx"
 
-        # selecionar o campo nome do arquivo
-        if clicar_botao_shadow_dom(driver, 'id', 'COMP4542',seletor_interno='button', descricao="Impressão"):
-            print("✅ Clicado em Confirmar através do botão!")
-            time.sleep(2)
-        # Método 2: Por caption
-        else: 
-            clicar_botao_shadow_por_texto(driver, 'Impressão')
-            print("✅ Clicado em Confirmar através do texto!")
-            time.sleep(2)
+        # # Debug completo
+        # resultados = debug_estrutura_completa(driver)
 
-        # selecionar o campo impressão
-        clicar_input_shadow(driver, 'COMP4539')
+        # # Também tente buscar por texto próximo (ex: "Impressão", "Arquivo", etc.)
+        # buscar_elemento_por_vizinhos(driver, "impressão")
+        # buscar_elemento_por_vizinhos(driver, "arquivo")
+        # buscar_elemento_por_vizinhos(driver, "nome")
 
-        # selecionar todo o texto do campo impressão
+        # input("\n⏸️  Pressione Enter para continuar após revisar o debug...")
+
+        time.sleep(5)
+
+        # Focar no campo de impressão
+        print("\n📝 Focando no campo de impressão...")
+        if not clicar_input_shadow(driver, 'COMP4539', debug=True): 
+            print("⚠️ Não conseguiu focar no campo COMP4539, tentando alternativa...")
+            # Alternativa: usar TABs
+            webdriver.ActionChains(driver).send_keys(Keys.TAB).perform()
+            time.sleep(1)
+        
+        time.sleep(2)
+
+        # Selecionar todo o texto do campo
+        print("📋 Selecionando todo o texto...")
         webdriver.ActionChains(driver).key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).perform()
         time.sleep(1)
         
-        # apagar o texto do campo impressão
+        # Apagar o texto
+        print("🗑️ Apagando texto...")
         webdriver.ActionChains(driver).send_keys(Keys.BACKSPACE).perform()
+        time.sleep(1)
         
-        # preecher o campo impressão com o nome do arquivo
+        # Preencher com o nome do arquivo
+        print(f"✍️ Preenchendo com: {nome_arquivo}")
+        webdriver.ActionChains(driver).send_keys(nome_arquivo).perform()
+        time.sleep(2)
 
+        # OU usar a função direta (escolha uma das duas abordagens):
+        # if preencher_input_shadow(driver, 'COMP4539', nome_arquivo, limpar_antes=True):
+        #     print("✅ Campo preenchido com sucesso!")
+        # else:
+        #     print("⚠️ Falha ao preencher, usando ActionChains...")
+        #     webdriver.ActionChains(driver).send_keys(nome_arquivo).perform()
+        
         # clicar no botão imprimir
         
-        # caminho fixo
-        caminho_fixo = "Y:\CONTROLADORIA\CUSTOS\15_BASES_PROTHEUS\Centro de Custo"
-
-        # join no diretotio com o ano e mes da competencia
+        # Preparar o caminho completo
         ano = competencia[:4]
         mes = competencia[4:6]
-        caminho_fixo_completo = f"{caminho_fixo}\{ano}\{mes}_{ano}"
+        caminho_fixo = "Y:\\CONTROLADORIA\\CUSTOS\\15_BASES_PROTHEUS\\Centro de Custo"
+        caminho_fixo_completo = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
 
-        # selecioonar o campo servidor
+        print(f"📂 Caminho: {caminho_fixo_completo}")
 
-        # limpar o campo de servidor
+        # Navegar para o campo de servidor (provavelmente o próximo TAB)
+        print("\n📁 Focando no campo servidor...")
+        webdriver.ActionChains(driver).send_keys(Keys.TAB).perform()
+        time.sleep(1)
+
+        # Selecionar tudo e apagar
+        webdriver.ActionChains(driver).key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).perform()
+        time.sleep(1)
         webdriver.ActionChains(driver).send_keys(Keys.BACKSPACE).perform()
-
-        # preecher o campo servidor com o caminho fixo
+        time.sleep(1)
+        
+        # Preencher o caminho
+        print(f"✍️ Preenchendo caminho...")
         webdriver.ActionChains(driver).send_keys(caminho_fixo_completo).perform()
-
-        # clicar no botão abrir
-
+        time.sleep(2)
         
-
-
-
+        # TODO: Clicar no botão "Imprimir" ou "OK" para finalizar
+        # Você precisa identificar o ID do botão de impressão
+        print("\n🖨️ Clicando no botão de impressão...")
+        # if clicar_botao_shadow_dom(driver, 'id', 'COMP4XXX', seletor_interno='button', descricao="Imprimir"):
+        #     print("✅ Download iniciado!")
+        # else:
+        #     clicar_botao_shadow_por_texto(driver, 'Imprimir')
         
+        print(f"✅ Filial {filial} processada!")
+        time.sleep(3)
 
     time.sleep(10)
     print("✓ Download concluído (aguardando validação e organização)")

@@ -1,6 +1,6 @@
 import psutil
 
-def fechar_aplicativo_protheus(nome_processo="web-agent-windows-x64.exe"):
+def fechar_aplicativo_webagent(nome_processo="web-agent-windows-x64.exe"):
     """
     Fecha o aplicativo ao final da automação
     """

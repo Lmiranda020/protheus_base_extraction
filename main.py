@@ -209,7 +209,7 @@ if __name__ == "__main__":
         if driver:
             print("\n🔚 Fechando driver...")
             driver.quit()
-            
+
         # Fechar o aplicativo
         fechar_aplicativo_webagent("web-agent-windows-x64.exe") 
     
