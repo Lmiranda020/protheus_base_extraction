@@ -12,9 +12,3 @@ def autenticar():
     
     return NOME_APP, EMAIL, SENHA, TITULO_JANELA
 
-def url_sistema():
-
-    URL_APP = os.getenv("URL_APP")
-    
-    return  URL_APP
-

@@ -1,4 +1,5 @@
 import time
+import os
 from modules.centro_de_custo import automation_centro_de_custo
 from auth.login_manager import autenticar, url_sistema
 from modules.calcular_competencia import calcular_competencia
@@ -9,6 +10,7 @@ from modules.clicar_botao_shadow_por_texto import clicar_botao_shadow_por_texto
 from modules.clicar_botao_shadow_duplo_iframe import clicar_botao_shadow_duplo_iframe
 from modules.tirar_screenshot import tirar_screenshot
 from modules.clicar_menu_item_direto import clicar_menu_item_direto
+from modules.abrir_aplicativo_webagent import abrir_aplicativo_webagent
 
 if __name__ == "__main__":
     
@@ -19,11 +21,20 @@ if __name__ == "__main__":
     # Carregar credenciais
     NOME_APP, EMAIL, SENHA, TITULO_JANELA = autenticar()
 
-    URL_APP = url_sistema()
+    URL_APP = os.getenv("URL_APP")
+
+    CAMINHO_APP = os.getenv("CAMINHO_APP")
     
     driver = None
     
+    # Tempo de espera para o app inicializar (em segundos)
+    TEMPO_INICIALIZACAO = 10
+    
     try:
+        # PASSO 1: Abrir o aplicativo  em segundo plano
+        if not abrir_aplicativo_webagent(CAMINHO_APP, timeout=TEMPO_INICIALIZACAO):
+            raise Exception("Falha ao abrir aplicativo")
+        
         # 1. Configurar driver
         print("⚙️ Configurando driver...")
         driver = setup_driver(headless=False)  # False para ver o que está acontecendo
