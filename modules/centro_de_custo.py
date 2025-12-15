@@ -3,15 +3,82 @@ import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
 from datetime import datetime
-from modules.aguardar_download_inteligente import aguardar_download_completo, fechar_excel
 import os
+
+def listar_arquivos_diretorio(caminho):
+    """
+    Lista todos os arquivos em um diretório com seus timestamps de modificação
+    """
+    try:
+        if not os.path.exists(caminho):
+            print(f"⚠️  Diretório não existe ainda: {caminho}")
+            return {}
+        
+        arquivos = {}
+        for arquivo in os.listdir(caminho):
+            caminho_completo = os.path.join(caminho, arquivo)
+            if os.path.isfile(caminho_completo):
+                # Guarda o timestamp de modificação
+                arquivos[arquivo] = os.path.getmtime(caminho_completo)
+        
+        return arquivos
+    except Exception as e:
+        print(f"❌ Erro ao listar arquivos: {e}")
+        return {}
+
+def aguardar_novo_arquivo(caminho, arquivos_antes, timeout=300, intervalo=2):
+    """
+    Aguarda até que um novo arquivo apareça no diretório
+    
+    Args:
+        caminho: Caminho do diretório a monitorar
+        arquivos_antes: Dicionário com arquivos existentes antes do download
+        timeout: Tempo máximo de espera em segundos (padrão: 5 minutos)
+        intervalo: Intervalo entre verificações em segundos
+    
+    Returns:
+        Nome do novo arquivo encontrado ou None se timeout
+    """
+    print(f"⏳ Monitorando diretório por até {timeout} segundos...")
+    tempo_inicio = time.time()
+    tempo_decorrido = 0
+    
+    while tempo_decorrido < timeout:
+        time.sleep(intervalo)
+        tempo_decorrido = time.time() - tempo_inicio
+        
+        # Lista arquivos atuais
+        arquivos_agora = listar_arquivos_diretorio(caminho)
+        
+        # Verifica se há novos arquivos
+        novos_arquivos = set(arquivos_agora.keys()) - set(arquivos_antes.keys())
+        
+        if novos_arquivos:
+            novo_arquivo = list(novos_arquivos)[0]
+            print(f"✅ Novo arquivo detectado: {novo_arquivo}")
+            print(f"⏱️  Tempo de espera: {tempo_decorrido:.1f} segundos")
+            return novo_arquivo
+        
+        # Verifica se algum arquivo foi modificado (pode estar sendo baixado)
+        for arquivo in arquivos_agora:
+            if arquivo in arquivos_antes:
+                if arquivos_agora[arquivo] != arquivos_antes[arquivo]:
+                    print(f"📝 Arquivo em modificação detectado: {arquivo}")
+        
+        # Mostra progresso a cada 10 segundos
+        if int(tempo_decorrido) % 10 == 0 and tempo_decorrido > 0:
+            print(f"⏳ Aguardando... {int(tempo_decorrido)}s / {timeout}s")
+    
+    print(f"⚠️  Timeout atingido ({timeout}s) - nenhum novo arquivo detectado")
+    return None
 
 def automacao_centro_de_custo(competencia):
     """
     Automação para download do relatório de centro de custo
     """ 
-    print("🚀Iniciando automação do centro de custo...")
-    # no menu a oção "Relatórios"
+    print("🚀 Iniciando automação do centro de custo...")
+    
+    # no menu a opção "Relatórios"
     if not clicar_imagem("data/menu_relatorios.png", confidence=0.8, timeout=15, descricao="Menu Relatórios"):
         print("Erro ao acessar o menu Relatórios.")
         return
@@ -21,7 +88,26 @@ def automacao_centro_de_custo(competencia):
         print(f"🏢 Processando filial: {filial}")
         print(f"{'='*60}\n")
         
+        # Definir o caminho do diretório
+        data = datetime.strptime(competencia, "%d/%m/%Y")
+        ano = data.year
+        mes = data.month
+        caminho_fixo = os.getenv("CAMINHO_FIXO_CC")
+        caminho_fixo_completo = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
+        print(f"📂 Caminho: {caminho_fixo_completo}")
+        
+        # ANTES DE INICIAR O DOWNLOAD: Listar arquivos existentes
+        print(f"📋 Listando arquivos existentes no diretório...")
+        arquivos_antes = listar_arquivos_diretorio(caminho_fixo_completo)
+        print(f"   Arquivos encontrados: {len(arquivos_antes)}")
+        if arquivos_antes:
+            for arquivo in list(arquivos_antes.keys())[:3]:  # Mostra apenas os 3 primeiros
+                print(f"   - {arquivo}")
+            if len(arquivos_antes) > 3:
+                print(f"   ... e mais {len(arquivos_antes) - 3} arquivo(s)")
+        
         time.sleep(2)
+        
         # clicar na opção "Centro de Custo"
         if not clicar_imagem("data/opcao_centro_de_custo.png", confidence=0.8, timeout=15, descricao="Opção Centro de Custo"):
             print("Erro ao acessar a opção Centro de Custo.")
@@ -49,7 +135,7 @@ def automacao_centro_de_custo(competencia):
             print("Erro ao clicar no botão Confirmar.")
             return
         
-        time.sleep(8)
+        time.sleep(15)
 
         # clicar no menu "planilha"
         if not clicar_imagem("data/menu_planilha.png", confidence=0.8, timeout=15, descricao="Menu Planilha"):
@@ -113,16 +199,10 @@ def automacao_centro_de_custo(competencia):
         # apaga o conteúdo do campo
         pyautogui.press('backspace')
 
-        # definir o nome do diretório de centro de custo
-        data = datetime.strptime(competencia, "%d/%m/%Y")
-        ano = data.year
-        mes = data.month
-        caminho_fixo = os.getenv("CAMINHO_FIXO_CC")
-        caminho_fixo_completo = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
-        print(f"📂 Caminho: {caminho_fixo_completo}")
-
         # digita o caminho da pasta de centro de custo  
         pyautogui.write(caminho_fixo_completo, interval=0.1)
+
+        time.sleep(2)
 
         # clicar no botão "Salvar" da janela de salvar arquivo
         if not clicar_imagem("data/botao_salvar_arquivo_final.png", confidence=0.8, timeout=15, descricao="Botão Salvar Arquivo"):
@@ -130,29 +210,26 @@ def automacao_centro_de_custo(competencia):
             return
 
         print("🔍 Aguardando conclusão do download...")
-        
-        sucesso, arquivo_baixado, tempo_gasto = aguardar_download_completo(
-            diretorio_temp=caminho_fixo_completo,
-            timeout=100,  
-            intervalo_verificacao=2  # Verifica a cada 2 segundos
+
+        # AGUARDAR NOVO ARQUIVO SER BAIXADO
+        novo_arquivo = aguardar_novo_arquivo(
+            caminho=caminho_fixo_completo,
+            arquivos_antes=arquivos_antes,
+            timeout=600,  # 5 minutos de timeout
+            intervalo=2   # Verifica a cada 2 segundos
         )
         
-        if not sucesso:
-            print(f"❌ Erro: Download não concluído para a filial {filial}")
-            continue
-        
-        print(f"⚡ Tempo de download: {tempo_gasto:.1f} segundos")
-        print(f"💡 Economia: {200 - tempo_gasto:.1f} segundos comparado ao timeout!")
-        
-        # Fecha o Excel antes de continuar
-        fechar_excel()
-        
-        print(f"✅ Filial {filial} processada com sucesso!")
+        if novo_arquivo:
+            print(f"✅ Filial {filial} processada com sucesso!")
+            print(f"📄 Arquivo baixado: {novo_arquivo}")
+        else:
+            print(f"⚠️  Filial {filial} - Download não detectado no tempo esperado")
+            print(f"   Continuando para próxima filial...")
 
     # clica no menu a opção "Relatórios", para fechar o menu aberto inicialmente
     if not clicar_imagem("data/menu_relatorios.png", confidence=0.8, timeout=15, descricao="Menu Relatórios"):
         print("Erro ao acessar o menu Relatórios.")
-        exit(1)
+        return
     
     print("\n" + "="*60)
     print("✅ Automação do centro de custo concluída para todas as filiais!")
