@@ -57,7 +57,7 @@ if __name__ == "__main__":
     # clicar entrar para configurar
     pyautogui.press('enter')
 
-    time.sleep(5)
+    time.sleep(8)
 
     habilitar_app_agent()
 
