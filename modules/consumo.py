@@ -54,15 +54,16 @@ def automacao_consumo(competencia):
         pyautogui.write(filial, interval=0.1)
 
         # clica no botão "Confirmar"
-        time.sleep(2)
-        if not clicar_imagem("data/botao_confirmar.png", confidence=0.8, timeout=15, descricao="Botão Confirmar"):
-            print("Erro ao clicar no botão Confirmar.")
-            return
-        time.sleep(5)
-
+        time.sleep(3)
         # clicar no botão reforma tributaria
         if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.8, timeout=15, descricao="Botão Reforma Tributária"):
             print("Erro ao clicar no botão Reforma Tributária.")
+
+        time.sleep(8)
+
+        if not clicar_imagem("data/botao_confirmar.png", confidence=0.8, timeout=15, descricao="Botão Confirmar"):
+            print("Erro ao clicar no botão Confirmar.")
+            return
 
         time.sleep(10)
         if not clicar_imagem("data/caixa_pesquisa.png", confidence=0.8, timeout=15, descricao="Caixa de pesquisa"):
