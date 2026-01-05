@@ -118,7 +118,7 @@ def automacao_centro_de_custo(competencia):
         # clicar duas vezes o tab
         pyautogui.press('tab', presses=2, interval=0.5)
 
-        # seleciona todo o campo 
+        # seleciona todo o campo
         pyautogui.keyDown('ctrl')
         pyautogui.press('a')
         pyautogui.keyUp('ctrl')
@@ -128,15 +128,19 @@ def automacao_centro_de_custo(competencia):
 
         # digita a filial
         pyautogui.write(filial, interval=0.1)
+        time.sleep(5)
+
+        # clicar do lado esquerdo da tela para evitar erros
+        pyautogui.click(x=100, y=200)
 
         # clicar no botão reforma tributaria
-        if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.8, timeout=15, descricao="Botão Reforma Tributária"):
+        if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.7, timeout=15, descricao="Botão Reforma Tributária"):
             print("Erro ao clicar no botão Reforma Tributária.")
 
         time.sleep(8)
 
         # clica no botão "Confirmar"
-        time.sleep(2)
+        
         if not clicar_imagem("data/botao_confirmar.png", confidence=0.8, timeout=15, descricao="Botão Confirmar"):
             print("Erro ao clicar no botão Confirmar.")
             return

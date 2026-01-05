@@ -54,9 +54,13 @@ def automacao_consumo(competencia):
         pyautogui.write(filial, interval=0.1)
 
         # clica no botão "Confirmar"
-        time.sleep(3)
+        time.sleep(5)
+
+        # clicar do lado esquerdo da tela para evitar erros
+        pyautogui.click(x=100, y=200)
+
         # clicar no botão reforma tributaria
-        if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.8, timeout=15, descricao="Botão Reforma Tributária"):
+        if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.7, timeout=15, descricao="Botão Reforma Tributária"):
             print("Erro ao clicar no botão Reforma Tributária.")
 
         time.sleep(8)
