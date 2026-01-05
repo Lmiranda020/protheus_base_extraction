@@ -92,8 +92,8 @@ if __name__ == "__main__":
 
     # clicar no botão "Confirmar"
     time.sleep(2)
-    if not clicar_imagem("data/botao_entrar.png", confidence=0.8, timeout=15, descricao="Botão Confirmar"):
-        print("Erro ao clicar no botão Confirmar.")
+    if not clicar_imagem("data/botao_entrar.png", confidence=0.8, timeout=15, descricao="Botão entrar"):
+        print("Erro ao clicar no botão entrar.")
         exit(1)
     
     time.sleep(3)
