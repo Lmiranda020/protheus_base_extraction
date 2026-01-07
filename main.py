@@ -99,10 +99,10 @@ if __name__ == "__main__":
     time.sleep(3)
 
     # inicia a execução da automação de consumo
-    # automacao_consumo(competencia_anterior)
+    automacao_consumo(competencia_anterior)
 
     # inicia a execução da automação de centro de custo
-    automacao_centro_de_custo(competencia_anterior)
+    # automacao_centro_de_custo(competencia_anterior)
 
     # fechar o app, final da automação
     print("Automação concluída com sucesso!")
