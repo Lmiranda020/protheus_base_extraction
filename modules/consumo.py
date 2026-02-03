@@ -130,27 +130,95 @@ def automacao_consumo(competencia):
         # digitar o nome do filtro
         pyautogui.write('Competecia', interval=0.1)
 
-        # selecionar a opção expresssão
-        if not clicar_imagem("data/botao_expressao.png", confidence=0.8, timeout=15, descricao="Botão Expressão"):
-            print("Erro ao clicar na opção expressão.")
+        # # selecionar a opção expresssão
+        # if not clicar_imagem("data/botao_expressao.png", confidence=0.8, timeout=15, descricao="Botão Expressão"):
+        #     print("Erro ao clicar na opção expressão.")
+        #     return
+        
+        # time.sleep(2)
+        
+        # pyautogui.press('tab', presses=2, interval=0.5)
+
+        # pyautogui.press('backspace')
+
+        # alterar os dois primeiros digitos da data por 01
+        competencia_inicial = "01" + competencia[2:]
+        print(f"Competência inicial: {competencia_inicial}")
+        print(f"Competência final: {competencia}")
+
+        # selecionar o botao de data
+        if not clicar_imagem("data/botao_data.png", confidence=0.8, timeout=15, descricao="Botão Data"):
+            print("Erro ao clicar na opção data.")
+            return
+        
+        # digitar a letra "D" e em seguinda a seta para baixo para selecionar o campo de data de emissão
+        pyautogui.write("D", interval=0.1)
+        pyautogui.press('down')
+        pyautogui.press('enter')
+
+        time.sleep(2)
+
+        # # MANTER AS BARRAS na data!
+        # expressao_filtro = f"D3_EMISSAO >= CTOD('{competencia_inicial}') .AND. D3_EMISSAO <= CTOD('{competencia}')"
+
+        # print(f"Expressão: {expressao_filtro}")
+
+        # # digitar a expressão
+        # pyautogui.write(expressao_filtro, interval=0.1)
+
+        # seleciona o campo de operador
+        if not clicar_imagem("data/operador_igual_a.png", confidence=0.8, timeout=15, descricao="Operador igual a"):
+            print("Erro ao clicar na opção operador igual a.")
+            return
+        
+        # clica na letra "M" e depois clica 3 vezes para baixo para selecionar o operador "maior ou igual a"
+        pyautogui.write("M", interval=0.1)
+        pyautogui.press('down', presses=3, interval=0.5)
+        pyautogui.press('enter')
+
+        # busca o campo para digitar a competencia inicial
+        if not clicar_imagem("data/campo_valor_filtro.png", confidence=0.8, timeout=15, descricao="Campo valor filtro"):
+            print("Erro ao clicar na opção campo valor filtro")
+            return
+
+        # escreve a competencia inicial
+        pyautogui.write(competencia_inicial, interval=0.1)
+
+        # clica no botão adicionar filtro
+        if not clicar_imagem("data/botao_add_filtro.png", confidence=0.8, timeout=15, descricao="Botão Adicionar filtro"):
+            print("Erro ao clicar na opção para adicionar filtro")
             return
         
         time.sleep(2)
         
-        pyautogui.press('tab', presses=2, interval=0.5)
+        # # clica no operado e
+        # if not clicar_imagem("data/operador_and.png", confidence=0.9, timeout=15, descricao="Operador and"):
+        #     print("Erro ao clicar na opção operador and")
+        #     return
+        # time.sleep(2)
 
-        pyautogui.press('backspace')
+        # pressiona 5 vezes o tab
+        pyautogui.press('tab', presses=5, interval=0.5)
+        pyautogui.press('enter')
 
-        # alterar os dois primeiros digitos da data por 01
-        competencia_inicial = "01" + competencia[2:]
-        print(competencia_inicial)
-
-        expressao_filtro = f'D3_EMISSAO >= CTOD("{competencia_inicial}") .AND. D3_EMISSAO <= CTOD("{competencia}")'
-
-        # digitar a expressão
-        pyautogui.write(expressao_filtro, interval=0.1)
+        # clicar na opção maior ou igual a para troca o operador
+        time.sleep(2)
+        if not clicar_imagem("data/operador_maior_igual_a.png", confidence=0.8, timeout=15, descricao="Operador maior igual a"):
+            print("Erro ao clicar na opção operador maior igual a.")
+            return
         
-        time.sleep(5)
+        # clica duas vezes para cima para selecionar o operador "menor ou igual a"
+        pyautogui.press('up', presses=2, interval=0.5)
+
+        pyautogui.press('enter')
+
+        # busca o campo para digitar a competencia final
+        if not clicar_imagem("data/campo_valor_filtro.png", confidence=0.8, timeout=15, descricao="Campo valor filtro"):
+            print("Erro ao clicar na opção campo valor filtro")
+            return
+        
+        # digita a competencia final
+        pyautogui.write(competencia, interval=0.1)
 
         time.sleep(2)
         # clica no campo para preecher a competencia
