@@ -10,9 +10,10 @@ def listar_arquivos_diretorio(caminho):
     Lista todos os arquivos em um diretório com seus timestamps de modificação
     """
     try:
+        # se o diretorio não exitir, cria o diretório
         if not os.path.exists(caminho):
             print(f"⚠️  Diretório não existe ainda: {caminho}")
-            return {}
+            os.makedirs(caminho, exist_ok=True)
         
         arquivos = {}
         for arquivo in os.listdir(caminho):

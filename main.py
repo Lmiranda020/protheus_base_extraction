@@ -71,7 +71,7 @@ if __name__ == "__main__":
     pyautogui.press('backspace')
 
     # digitar o email
-    pyautogui.write(USER.upper(), interval=0.1)
+    pyautogui.typewrite(USER.upper(), interval=0.2)
 
     # pressionar tab para ir para o campo de senha
     pyautogui.press('tab')
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     automacao_consumo(competencia_anterior)
 
     # inicia a execução da automação de centro de custo
-    # automacao_centro_de_custo(competencia_anterior)
+    automacao_centro_de_custo(competencia_anterior)
 
     # fechar o app, final da automação
     print("Automação concluída com sucesso!")
