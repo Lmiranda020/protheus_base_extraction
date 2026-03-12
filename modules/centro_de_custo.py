@@ -94,6 +94,8 @@ def automacao_centro_de_custo(competencia):
         ano = data.year
         mes = data.month
         caminho_fixo = os.getenv("CAMINHO_FIXO_CC")
+        if len(mes) == 1:
+            mes = f"0{mes}"
         caminho_fixo_completo = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
         print(f"📂 Caminho: {caminho_fixo_completo}")
         
