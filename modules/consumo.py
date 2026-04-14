@@ -7,25 +7,41 @@ from modules.mover_e_renomear_arquivo_baixado import mover_e_renomear_csv
 from modules.aguardar_download_inteligente import aguardar_download_completo, fechar_excel
 import os
 
-def automacao_consumo(competencia):
+
+def automacao_consumo(competencia, log=None):
+    """
+    Automação de consumo.
+
+    Args:
+        competencia: data no formato "DD/MM/YYYY"
+        log: instância de LogExecucao (opcional). Se informado, registra cada filial.
+    """
     # escolhe a opção do relatório de consumo
     if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=15, descricao="Menu Consumo"):
         print("Erro ao acessar o menu consultas.")
         return
+
     time.sleep(2)
 
     for filial in LISTA_FILIAIS:
+        inicio_filial = datetime.now()
+
         print(f"\n{'='*60}")
         print(f"🏢 Processando filial: {filial}")
         print(f"{'='*60}\n")
-        
+
         time.sleep(5)
         # clica na opção consumo mes a mes
         if not clicar_imagem("data/opcao_genericos.png", confidence=0.8, timeout=15, descricao="Opção genericos"):
-            print("Erro ao escolher a opção genericos")
+            msg = "Erro ao escolher a opção genericos"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
+
         time.sleep(3)
-        
+
         # selecionar todo o campo focado
         pyautogui.keyDown('ctrl')
         pyautogui.press('a')
@@ -35,14 +51,14 @@ def automacao_consumo(competencia):
         pyautogui.press('backspace')
         time.sleep(2)
 
-        # digitar a competencia que do mês anterior
+        # digitar a competencia do mês anterior
         pyautogui.write(competencia, interval=0.1)
         time.sleep(2)
-        
+
         # clicar duas vezes o tab
         pyautogui.press('tab', presses=1, interval=0.5)
 
-        # seleciona todo o campo 
+        # seleciona todo o campo
         pyautogui.keyDown('ctrl')
         pyautogui.press('a')
         pyautogui.keyUp('ctrl')
@@ -57,9 +73,13 @@ def automacao_consumo(competencia):
         time.sleep(5)
 
         if not clicar_imagem("data/botao_confirmar.png", confidence=0.8, timeout=15, descricao="Botão Confirmar"):
-            print("Erro ao clicar no botão Confirmar.")
+            msg = "Erro ao clicar no botão Confirmar"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
+
         time.sleep(5)
 
         # clicar no botão reforma tributaria
@@ -67,9 +87,15 @@ def automacao_consumo(competencia):
             print("Erro ao clicar no botão Reforma Tributária.")
 
         time.sleep(10)
+
         if not clicar_imagem("data/caixa_pesquisa.png", confidence=0.8, timeout=15, descricao="Caixa de pesquisa"):
-            print("Erro ao clicar na caixa de texto.")
+            msg = "Erro ao clicar na caixa de texto"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
+
         time.sleep(5)
 
         # selecionar todo o campo focado
@@ -80,9 +106,8 @@ def automacao_consumo(competencia):
         # limpar todo o campo selecionado
         pyautogui.press('backspace')
 
-        # digitar "sd3"
+        # digitar "SD3"
         pyautogui.write("SD3", interval=0.1)
-
         time.sleep(2)
 
         # pressionar tab
@@ -92,54 +117,66 @@ def automacao_consumo(competencia):
         pyautogui.press('enter')
 
         print("Iniciando a configuração de filtro...")
-
         time.sleep(6)
+
         # adicionar dicionario
         if not clicar_imagem("data/dicionario.png", confidence=0.8, timeout=15, descricao="Botão Dicionario"):
-            print("Erro ao clicar na opção dicionário.")
+            msg = "Erro ao clicar na opção dicionário"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
+
         time.sleep(4)
+
         # marcar a caixa de seleção dicionário
         if not clicar_imagem("data/marcar_caixa_dicionario.png", confidence=0.8, timeout=15, descricao="Caixa dicionário"):
-            print("Erro ao flegar a caixa de seleção dicionário.")
+            msg = "Erro ao flegar a caixa de seleção dicionário"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
         time.sleep(3)
+
         # marcar em ok
         if not clicar_imagem("data/ok_dicionario.png", confidence=0.8, timeout=15, descricao="Opção 'ok' dicionário"):
-            print("Erro ao clicar 'ok' dicionário")
+            msg = "Erro ao clicar 'ok' dicionário"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
         time.sleep(4)
+
         # clica na opção filtro
         if not clicar_imagem("data/filtrar_consumo.png", confidence=0.8, timeout=15, descricao="Botão Filtrar"):
-            print("Erro ao clicar no filtro.")
+            msg = "Erro ao clicar no filtro"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
-        time.sleep(3)        
+        time.sleep(3)
+
         # clica na opção criar filtro
         if not clicar_imagem("data/criar_filtro.png", confidence=0.8, timeout=15, descricao="Botão Criar Filtro"):
-            print("Erro ao clicar no Criar Filtro.")
+            msg = "Erro ao clicar no Criar Filtro"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
+
         time.sleep(3)
-        # clicar tres vezes tab
+
+        # clicar tres vezes tab e digitar o nome do filtro
         pyautogui.press('tab', presses=3, interval=0.5)
-
-        # digitar o nome do filtro
         pyautogui.write('Competecia', interval=0.1)
-
-        # # selecionar a opção expresssão
-        # if not clicar_imagem("data/botao_expressao.png", confidence=0.8, timeout=15, descricao="Botão Expressão"):
-        #     print("Erro ao clicar na opção expressão.")
-        #     return
-        
-        # time.sleep(2)
-        
-        # pyautogui.press('tab', presses=2, interval=0.5)
-
-        # pyautogui.press('backspace')
 
         # alterar os dois primeiros digitos da data por 01
         competencia_inicial = "01" + competencia[2:]
@@ -148,156 +185,195 @@ def automacao_consumo(competencia):
 
         # selecionar o botao de data
         if not clicar_imagem("data/botao_data.png", confidence=0.8, timeout=15, descricao="Botão Data"):
-            print("Erro ao clicar na opção data.")
+            msg = "Erro ao clicar na opção data"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        # digitar a letra "D" e em seguinda a seta para baixo para selecionar o campo de data de emissão
+
         pyautogui.write("D", interval=0.1)
         pyautogui.press('down')
         pyautogui.press('enter')
-
         time.sleep(2)
-
-        # # MANTER AS BARRAS na data!
-        # expressao_filtro = f"D3_EMISSAO >= CTOD('{competencia_inicial}') .AND. D3_EMISSAO <= CTOD('{competencia}')"
-
-        # print(f"Expressão: {expressao_filtro}")
-
-        # # digitar a expressão
-        # pyautogui.write(expressao_filtro, interval=0.1)
 
         # seleciona o campo de operador
         if not clicar_imagem("data/operador_igual_a.png", confidence=0.8, timeout=15, descricao="Operador igual a"):
-            print("Erro ao clicar na opção operador igual a.")
+            msg = "Erro ao clicar na opção operador igual a"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        # clica na letra "M" e depois clica 3 vezes para baixo para selecionar o operador "maior ou igual a"
+
         pyautogui.write("M", interval=0.1)
         pyautogui.press('down', presses=3, interval=0.5)
         pyautogui.press('enter')
 
         # busca o campo para digitar a competencia inicial
         if not clicar_imagem("data/campo_valor_filtro.png", confidence=0.8, timeout=15, descricao="Campo valor filtro"):
-            print("Erro ao clicar na opção campo valor filtro")
+            msg = "Erro ao clicar na opção campo valor filtro"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
-        # escreve a competencia inicial
         pyautogui.write(competencia_inicial, interval=0.1)
 
         # clica no botão adicionar filtro
         if not clicar_imagem("data/botao_add_filtro.png", confidence=0.8, timeout=15, descricao="Botão Adicionar filtro"):
-            print("Erro ao clicar na opção para adicionar filtro")
+            msg = "Erro ao clicar na opção para adicionar filtro"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        time.sleep(2)
-        
-        # # clica no operado e
-        # if not clicar_imagem("data/operador_and.png", confidence=0.9, timeout=15, descricao="Operador and"):
-        #     print("Erro ao clicar na opção operador and")
-        #     return
-        # time.sleep(2)
 
-        # pressiona 5 vezes o tab
+        time.sleep(2)
+
         pyautogui.press('tab', presses=5, interval=0.5)
         pyautogui.press('enter')
 
-        # clicar na opção maior ou igual a para troca o operador
         time.sleep(2)
-        if not clicar_imagem("data/operador_maior_igual_a.png", confidence=0.8, timeout=15, descricao="Operador maior igual a"):
-            print("Erro ao clicar na opção operador maior igual a.")
-            return
-        
-        # clica duas vezes para cima para selecionar o operador "menor ou igual a"
-        pyautogui.press('up', presses=2, interval=0.5)
 
+        # clicar na opção maior ou igual a para trocar o operador
+        if not clicar_imagem("data/operador_maior_igual_a.png", confidence=0.8, timeout=15, descricao="Operador maior igual a"):
+            msg = "Erro ao clicar na opção operador maior igual a"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
+            return
+
+        pyautogui.press('up', presses=2, interval=0.5)
         pyautogui.press('enter')
 
         # busca o campo para digitar a competencia final
         if not clicar_imagem("data/campo_valor_filtro.png", confidence=0.8, timeout=15, descricao="Campo valor filtro"):
-            print("Erro ao clicar na opção campo valor filtro")
+            msg = "Erro ao clicar na opção campo valor filtro"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        # digita a competencia final
+
         pyautogui.write(competencia, interval=0.1)
-
         time.sleep(2)
-        # clica no campo para preecher a competencia
+
         if not clicar_imagem("data/botao_add_filtro.png", confidence=0.8, timeout=15, descricao="Botão Adicionar filtro"):
-            print("Erro ao clicar na opção para adicionar filtro")
+            msg = "Erro ao clicar na opção para adicionar filtro (competência final)"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        time.sleep(2)        
-        # clicar no botao para salvar o filtro
+
+        time.sleep(2)
+
         if not clicar_imagem("data/botao_salvar_filtro.png", confidence=0.8, timeout=15, descricao="Botão salvar filtro"):
-            print("Erro ao clicar na opção salvar filtro")
+            msg = "Erro ao clicar na opção salvar filtro"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        time.sleep(2)        
-        # clicar na caixa de seleção do filtro criado
+
+        time.sleep(2)
+
         if not clicar_imagem("data/selecionar_filtro_selecionado.png", confidence=0.8, timeout=15, descricao="Caixa de seleção do filtro criado"):
-            print("Erro ao selecionar a caixa do filtro criado")
+            msg = "Erro ao selecionar a caixa do filtro criado"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
-        
-        time.sleep(2)        
-        # clicar no botao para aplicar o filtro
+
+        time.sleep(2)
+
         if not clicar_imagem("data/aplicar_filtro_selecionado.png", confidence=0.8, timeout=15, descricao="Aplicar filtro selecionado"):
-            print("Erro ao aplicar o filtro selecionado")
+            msg = "Erro ao aplicar o filtro selecionado"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
         time.sleep(2)
-        # selecionar oo tipo de exportação
+
         if not clicar_imagem("data/export_csv.png", confidence=0.8, timeout=15, descricao="Selecionar o tipo de opção export"):
-            print("Erro ao selecionar o tipo de exportação")
+            msg = "Erro ao selecionar o tipo de exportação"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
         time.sleep(2)
-        # selecionar oo tipo de exportação
+
         if not clicar_imagem("data/ponto_e_virgula.png", confidence=0.8, timeout=15, descricao="Selecionar o tipo ponto e virgula"):
-            print("Erro ao selecionar o tipo ponto e virgula")
-            return
-        
-        time.sleep(2)
-        # selecionar a opção "confirmar"
-        if not clicar_imagem("data/confirmar_export.png", confidence=0.8, timeout=15, descricao="Confirmar exportação"):
-            print("Erro ao confirmar exportação")
+            msg = "Erro ao selecionar o tipo ponto e virgula"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             return
 
+        time.sleep(2)
+
+        if not clicar_imagem("data/confirmar_export.png", confidence=0.8, timeout=15, descricao="Confirmar exportação"):
+            msg = "Erro ao confirmar exportação"
+            print(msg)
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
+            return
 
         diretorio_temp = os.getenv("DIRETORIO_TEMP")
-        
-        sucesso, arquivo_baixado, tempo_gasto = aguardar_download_completo(
+
+        sucesso_dl, arquivo_baixado, tempo_gasto = aguardar_download_completo(
             diretorio_temp=diretorio_temp,
-            timeout=900, 
-            intervalo_verificacao=2  # Verifica a cada 2 segundos
+            timeout=900,
+            intervalo_verificacao=2
         )
-        
-        if not sucesso:
-            print(f"❌ Erro: Download não concluído para a filial {filial}")
+
+        if not sucesso_dl:
+            msg = f"Download não concluído para a filial {filial}"
+            print(f"❌ Erro: {msg}")
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
             continue
-        
+
         print(f"⚡ Economia de tempo: {900 - tempo_gasto:.1f} segundos!")
-        
-        # Fecha o Excel antes de mover o arquivo
+
         fechar_excel()
-        
         time.sleep(4)
-        
+
         # Define o diretório de destino
         data = datetime.strptime(competencia, "%d/%m/%Y")
-        ano = data.year
-        mes = data.month
+        ano  = data.year
+        mes  = data.month
         caminho_fixo = os.getenv("CAMINHO_FIXO_CONSUMO")
         diretorio_destino = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
         print(f"📂 Caminho: {diretorio_destino}")
-        
-        # Move e renomeia o arquivo
+
         print("Processando arquivo baixado...")
         if mover_e_renomear_csv(filial, competencia, diretorio_destino):
             print(f"✅ Filial {filial} processada com sucesso!")
+            if log:
+                log.registrar_filial(filial, sucesso=True,
+                                     mensagem="Arquivo exportado e movido com sucesso",
+                                     inicio_filial=inicio_filial)
         else:
-            print(f"❌ Erro ao processar o arquivo da filial {filial}")
+            msg = "Erro ao mover/renomear o arquivo CSV"
+            print(f"❌ {msg} da filial {filial}")
+            if log:
+                log.registrar_filial(filial, sucesso=False, mensagem=msg,
+                                     inicio_filial=inicio_filial)
 
         time.sleep(5)
+
         # sair do consumo
         if not clicar_imagem("data/sair_consumo.png", confidence=0.8, timeout=15, descricao="Saindo do consumo"):
             print("Erro ao sair do consumo")
