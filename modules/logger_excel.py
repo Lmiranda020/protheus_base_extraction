@@ -4,9 +4,10 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+LOG_FOLDER   = "log"
 LOG_FILENAME = "log_automacao.xlsx"
 
-# ── Paleta de cores ──────────────────────────────────────────────────────────
+# Paleta de cores
 COR_HEADER      = "1F4E79"   # azul escuro
 COR_SUCESSO     = "E2EFDA"   # verde claro
 COR_ERRO        = "FDDCDC"   # vermelho claro
@@ -34,7 +35,10 @@ COLUNAS = [
 
 
 def _caminho_log(raiz_projeto: str) -> str:
-    return os.path.join(raiz_projeto, LOG_FILENAME)
+    """Retorna o caminho completo do arquivo de log dentro da pasta log/."""
+    pasta_log = os.path.join(raiz_projeto, LOG_FOLDER)
+    os.makedirs(pasta_log, exist_ok=True)   # cria a pasta se não existir
+    return os.path.join(pasta_log, LOG_FILENAME)
 
 
 def _criar_planilha(wb: Workbook) -> None:
@@ -79,8 +83,6 @@ def _estilizar_linha(ws, row: int, status: str) -> None:
     status_cell.font = Font(name="Arial", size=10, bold=True, color=cor_txt)
 
 
-# ── API pública ──────────────────────────────────────────────────────────────
-
 class LogExecucao:
     """
     Gerencia o log incremental de execuções em Excel.
@@ -102,10 +104,10 @@ class LogExecucao:
         self.inicio     = None
         self._registros = []   # buffer: (inicio, fim, tipo, comp, filial, status, msg, tempo)
 
-    # ── Ciclo de vida ────────────────────────────────────────────────────────
+
 
     def iniciar_execucao(self, tipo: str, competencia: str, filiais: list) -> None:
-        """Marca o início da execução e guarda os metadados."""
+        """Marca o início da execução e guarda os metadados"""
         self.tipo        = tipo
         self.competencia = competencia
         self.filiais     = filiais
@@ -121,7 +123,7 @@ class LogExecucao:
         mensagem: str = "",
         inicio_filial: datetime = None,
     ) -> None:
-        """Registra o resultado de uma filial no buffer."""
+        """Registra o resultado de uma filial no buffer"""
         fim      = datetime.now()
         inicio_f = inicio_filial or fim
         tempo    = round((fim - inicio_f).total_seconds(), 1)
@@ -142,7 +144,7 @@ class LogExecucao:
     def finalizar_execucao(self) -> dict:
         """
         Persiste todos os registros no Excel e retorna um dicionário-resumo
-        para ser usado no e-mail.
+        para ser usado no e-mail
         """
         fim_geral = datetime.now()
         self._salvar_no_excel()
@@ -163,8 +165,7 @@ class LogExecucao:
             "caminho_log" : self.caminho,
         }
         return resumo
-
-    # ── Persistência ─────────────────────────────────────────────────────────
+    
 
     def _salvar_no_excel(self) -> None:
         if os.path.exists(self.caminho):

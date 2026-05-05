@@ -20,7 +20,7 @@ def _html_tabela_filiais(filiais: list, cor_badge: str, emoji: str) -> str:
 
 
 def _montar_html(resumo: dict) -> str:
-    """Monta o corpo do e-mail em HTML com visual profissional."""
+   
     tipo       = resumo["tipo"]
     competencia = resumo["competencia"]
     inicio     = resumo["inicio"]

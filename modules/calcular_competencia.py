@@ -10,3 +10,7 @@ def calcular_competencia():
     competencia = ultimo_dia_mes_anterior.strftime("%d/%m/%Y")
     print(f"✓ Competência: {competencia}")
     return competencia
+
+# def calcular_competencia():
+#     data = datetime.strptime("30/04/2026", "%d/%m/%Y")
+#     return data.strftime("%d/%m/%Y")
