@@ -353,8 +353,9 @@ def automacao_consumo(competencia, log=None):
         # Define o diretório de destino
         data = datetime.strptime(competencia, "%d/%m/%Y")
         ano  = data.year
-        mes  = data.month
+        mes  = str(data.month).zfill(2)  # inserir zero à esquerda do mês, se necessário
         caminho_fixo = os.getenv("CAMINHO_FIXO_CONSUMO")
+
         diretorio_destino = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
         print(f"📂 Caminho: {diretorio_destino}")
 

@@ -94,7 +94,7 @@ if __name__ == "__main__":
     resumo_consumo = log_consumo.finalizar_execucao()
     enviar_email_resultado(resumo_consumo)
 
-    # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
+    # # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
 
     log_cc = LogExecucao(raiz_projeto=RAIZ_PROJETO)
     log_cc.iniciar_execucao(
