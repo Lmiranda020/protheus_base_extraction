@@ -12,5 +12,5 @@ def calcular_competencia():
     return competencia
 
 # def calcular_competencia():
-#     data = datetime.strptime("30/04/2026", "%d/%m/%Y")
+#     data = datetime.strptime("30/05/2026", "%d/%m/%Y")
 #     return data.strftime("%d/%m/%Y")

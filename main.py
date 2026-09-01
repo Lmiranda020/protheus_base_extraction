@@ -82,17 +82,17 @@ if __name__ == "__main__":
 
     # ── Automação de CONSUMO ──────────────────────────────────────────────────
 
-    log_consumo = LogExecucao(raiz_projeto=RAIZ_PROJETO)
-    log_consumo.iniciar_execucao(
-        tipo="Consumo",
-        competencia=competencia_anterior,
-        filiais=LISTA_FILIAIS,
-    )
+    # log_consumo = LogExecucao(raiz_projeto=RAIZ_PROJETO)
+    # log_consumo.iniciar_execucao(
+    #     tipo="Consumo",
+    #     competencia=competencia_anterior,
+    #     filiais=LISTA_FILIAIS,
+    # )
 
-    automacao_consumo(competencia_anterior, log=log_consumo)
+    # automacao_consumo(competencia_anterior, log=log_consumo)
 
-    resumo_consumo = log_consumo.finalizar_execucao()
-    enviar_email_resultado(resumo_consumo)
+    # resumo_consumo = log_consumo.finalizar_execucao()
+    # enviar_email_resultado(resumo_consumo)
 
     # # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
 
