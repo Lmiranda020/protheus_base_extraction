@@ -219,7 +219,8 @@ def automacao_consumo(competencia, log=None):
                                      inicio_filial=inicio_filial)
             return
 
-        pyautogui.write(competencia_inicial, interval=0.1)
+        time.sleep(0.5)
+        pyautogui.write(competencia_inicial, interval=0.2)
 
         # clica no botão adicionar filtro
         if not clicar_imagem("data/botao_add_filtro.png", confidence=0.8, timeout=15, descricao="Botão Adicionar filtro"):
@@ -258,7 +259,7 @@ def automacao_consumo(competencia, log=None):
                                      inicio_filial=inicio_filial)
             return
 
-        pyautogui.write(competencia, interval=0.1)
+        pyautogui.write(competencia, interval=0.2)
         time.sleep(2)
 
         if not clicar_imagem("data/botao_add_filtro.png", confidence=0.8, timeout=15, descricao="Botão Adicionar filtro"):

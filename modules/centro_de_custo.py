@@ -2,7 +2,7 @@ from modules.clicar_imagem import clicar_imagem
 import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 
@@ -60,19 +60,25 @@ def arquivo_esta_estavel(caminho_completo, tentativas=3, intervalo=2):
         return False
 
 
-def aguardar_novo_arquivo(caminho, arquivos_antes, momento_download=None, timeout=300, intervalo=2):
+def aguardar_novo_arquivo(caminho, arquivos_antes, momento_download=None, timeout=300,
+                           intervalo=2, margem_seguranca_segundos=30):
     """
     Aguarda até que um novo arquivo apareça no diretório, confirma que ele foi
-    salvo depois do momento em que o download foi acionado (evita pegar um
+    salvo depois do momento em que a exportação foi acionada (evita pegar um
     arquivo antigo por engano) e espera ele ficar estável (gravação concluída).
 
     Args:
         caminho: diretório monitorado
         arquivos_antes: snapshot {nome: mtime} de antes do download
         momento_download: datetime de referência — o arquivo novo precisa ter
-                           mtime posterior a esse horário para ser considerado válido
+                           mtime posterior a esse horário (com margem) para ser
+                           considerado válido
         timeout: tempo máximo de espera em segundos
         intervalo: intervalo entre verificações
+        margem_seguranca_segundos: tolerância aplicada antes de momento_download,
+                           pra absorver diferença de relógio entre a máquina local
+                           e o servidor de rede, e pequenos delays entre o clique
+                           e o início real da gravação do arquivo
 
     Returns:
         Nome do novo arquivo encontrado e confirmado, ou None se timeout/inválido.
@@ -92,13 +98,17 @@ def aguardar_novo_arquivo(caminho, arquivos_antes, momento_download=None, timeou
             novo_arquivo = list(novos_arquivos)[0]
             caminho_completo = os.path.join(caminho, novo_arquivo)
 
-            # Verifica se o horário de modificação é posterior ao início do download
+            # Verifica se o horário de modificação é posterior ao início da exportação
+            # (com margem de segurança pra absorver delay/diferença de relógio)
             if momento_download:
                 mtime_arquivo = datetime.fromtimestamp(os.path.getmtime(caminho_completo))
-                if mtime_arquivo < momento_download:
+                limite_aceitavel = momento_download - timedelta(seconds=margem_seguranca_segundos)
+                if mtime_arquivo < limite_aceitavel:
                     print(f"⚠️  Arquivo '{novo_arquivo}' encontrado, mas o horário "
-                          f"({mtime_arquivo.strftime('%H:%M:%S')}) é anterior ao início "
-                          f"do download ({momento_download.strftime('%H:%M:%S')}). Ignorando.")
+                          f"({mtime_arquivo.strftime('%H:%M:%S')}) é anterior ao limite aceitável "
+                          f"({limite_aceitavel.strftime('%H:%M:%S')}, margem de "
+                          f"{margem_seguranca_segundos}s antes de "
+                          f"{momento_download.strftime('%H:%M:%S')}). Ignorando.")
                     continue
 
             print(f"✅ Novo arquivo detectado: {novo_arquivo}")
@@ -316,11 +326,18 @@ def automacao_centro_de_custo(competencia, log=None):
         nome_arquivo = f"CC_{filial}_{competencia.replace('/', '-')}"
 
         # junta o nome do diretorio com o nome do arquivo
-        # caminho_fixo_completo_p_digitar = f"{caminho_fixo_completo}\\{nome_arquivo}"
         caminho_fixo_completo_p_digitar = caminho_fixo_completo
         pyautogui.write(caminho_fixo_completo_p_digitar, interval=0.1)
         pyautogui.press('enter')
         time.sleep(2)
+
+        # marca o horário ANTES do clique em "Salvar Arquivo Final" — é esse
+        # clique que efetivamente dispara a exportação/gravação do arquivo na
+        # rede (o botão "Download" logo depois é só confirmação/acompanhamento
+        # da UI), então a referência de horário precisa vir de antes dele,
+        # não depois. Uma margem de segurança extra é aplicada na comparação
+        # dentro de aguardar_novo_arquivo pra absorver qualquer delay residual.
+        momento_download = datetime.now()
 
         # clicar no botão "Salvar" da janela de salvar arquivo
         if not clicar_imagem("data/botao_salvar_arquivo_final.png", confidence=0.9, timeout=15, descricao="Botão Salvar Arquivo"):
@@ -334,11 +351,6 @@ def automacao_centro_de_custo(competencia, log=None):
         print("🔍 Aguardando conclusão do download...")
 
         time.sleep(2)
-
-        # marca o horário exato do clique em download — usado depois pra
-        # confirmar que o arquivo encontrado foi realmente salvo agora,
-        # e não é um arquivo antigo que já estava na pasta
-        momento_download = datetime.now()
 
         # clica no botao de download
         if not clicar_imagem("data/botao_download.png", confidence=0.8, timeout=15, descricao="Botão Download"):
@@ -354,7 +366,8 @@ def automacao_centro_de_custo(competencia, log=None):
             arquivos_antes=arquivos_antes,
             momento_download=momento_download,
             timeout=600,
-            intervalo=2
+            intervalo=2,
+            margem_seguranca_segundos=30
         )
 
         if novo_arquivo:

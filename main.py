@@ -82,31 +82,31 @@ if __name__ == "__main__":
 
     # ── Automação de CONSUMO ──────────────────────────────────────────────────
 
-    # log_consumo = LogExecucao(raiz_projeto=RAIZ_PROJETO)
-    # log_consumo.iniciar_execucao(
-    #     tipo="Consumo",
-    #     competencia=competencia_anterior,
-    #     filiais=LISTA_FILIAIS,
-    # )
-
-    # automacao_consumo(competencia_anterior, log=log_consumo)
-
-    # resumo_consumo = log_consumo.finalizar_execucao()
-    # enviar_email_resultado(resumo_consumo)
-
-    # # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
-
-    log_cc = LogExecucao(raiz_projeto=RAIZ_PROJETO)
-    log_cc.iniciar_execucao(
-        tipo="Centro de Custo",
+    log_consumo = LogExecucao(raiz_projeto=RAIZ_PROJETO)
+    log_consumo.iniciar_execucao(
+        tipo="Consumo",
         competencia=competencia_anterior,
         filiais=LISTA_FILIAIS,
     )
 
-    automacao_centro_de_custo(competencia_anterior, log=log_cc)
+    automacao_consumo(competencia_anterior, log=log_consumo)
 
-    resumo_cc = log_cc.finalizar_execucao()
-    enviar_email_resultado(resumo_cc)
+    resumo_consumo = log_consumo.finalizar_execucao()
+    enviar_email_resultado(resumo_consumo)
+
+    # # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
+
+    # log_cc = LogExecucao(raiz_projeto=RAIZ_PROJETO)
+    # log_cc.iniciar_execucao(
+    #     tipo="Centro de Custo",
+    #     competencia=competencia_anterior,
+    #     filiais=LISTA_FILIAIS,
+    # )
+
+    # automacao_centro_de_custo(competencia_anterior, log=log_cc)
+
+    # resumo_cc = log_cc.finalizar_execucao()
+    # enviar_email_resultado(resumo_cc)
 
     # ── Encerramento ──────────────────────────────────────────────────────────
 
