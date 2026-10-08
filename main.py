@@ -58,6 +58,12 @@ if __name__ == "__main__":
     habilitar_app_agent()
     time.sleep(15)
 
+    # clicar no campo para digitar o usuário, através da imagem do campo de usuário
+    if not clicar_imagem("data/campo_usuario.png", confidence=0.8, timeout=15, descricao="Campo usuário"):
+        print("Erro ao clicar no campo de usuário.")
+        exit(1)
+
+
     pyautogui.keyDown('ctrl')
     pyautogui.press('a')
     pyautogui.keyUp('ctrl')
@@ -96,17 +102,17 @@ if __name__ == "__main__":
 
     # # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
 
-    # log_cc = LogExecucao(raiz_projeto=RAIZ_PROJETO)
-    # log_cc.iniciar_execucao(
-    #     tipo="Centro de Custo",
-    #     competencia=competencia_anterior,
-    #     filiais=LISTA_FILIAIS,
-    # )
+    log_cc = LogExecucao(raiz_projeto=RAIZ_PROJETO)
+    log_cc.iniciar_execucao(
+        tipo="Centro de Custo",
+        competencia=competencia_anterior,
+        filiais=LISTA_FILIAIS,
+    )
 
-    # automacao_centro_de_custo(competencia_anterior, log=log_cc)
+    automacao_centro_de_custo(competencia_anterior, log=log_cc)
 
-    # resumo_cc = log_cc.finalizar_execucao()
-    # enviar_email_resultado(resumo_cc)
+    resumo_cc = log_cc.finalizar_execucao()
+    enviar_email_resultado(resumo_cc)
 
     # ── Encerramento ──────────────────────────────────────────────────────────
 
