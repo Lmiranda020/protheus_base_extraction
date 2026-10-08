@@ -1,0 +1,5 @@
+.env
+iniciar_automacao_protheus.bat
+log/prints/
+__pycache__/
+*.pyc
