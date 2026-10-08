@@ -83,6 +83,34 @@ def _estilizar_linha(ws, row: int, status: str) -> None:
     status_cell.font = Font(name="Arial", size=10, bold=True, color=cor_txt)
 
 
+def filiais_com_sucesso(raiz_projeto: str, tipo: str, competencia: str) -> set:
+    """
+    Lê o log e retorna as filiais que já foram processadas com sucesso
+    para o tipo de relatório e a competência informados.
+    """
+    caminho = _caminho_log(raiz_projeto)
+    if not os.path.exists(caminho):
+        return set()
+
+    try:
+        wb = load_workbook(caminho, read_only=True)
+        ws = wb["Log"]
+        filiais = set()
+        # colunas: Início, Fim, Tipo, Competência, Filial, Status, Mensagem, Tempo
+        for linha in ws.iter_rows(min_row=2, values_only=True):
+            if len(linha) < 6:
+                continue
+            _, _, tipo_l, comp_l, filial_l, status_l = linha[:6]
+            if (tipo_l == tipo and str(comp_l) == competencia
+                    and status_l == "✅ Sucesso" and filial_l):
+                filiais.add(str(filial_l))
+        wb.close()
+        return filiais
+    except Exception as e:
+        print(f"⚠️  Não foi possível ler o log para ver as filiais já processadas: {e}")
+        return set()
+
+
 class LogExecucao:
     """
     Gerencia o log incremental de execuções em Excel.

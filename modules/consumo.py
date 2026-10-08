@@ -1,6 +1,7 @@
 from modules.clicar_imagem import clicar_imagem
 from modules.localizar_imagem import localizar_imagem
-from modules.etapa import EtapaFalhou, etapa, processar_filiais, registrar_filiais_com_erro
+from modules.etapa import (EtapaFalhou, etapa, aguardar_imagem_sumir, processar_filiais,
+                           registrar_filiais_com_erro)
 import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
@@ -23,13 +24,23 @@ def voltar_tela_inicial_consumo(tentativas=6):
                             descricao="Tela inicial (opção genéricos)"):
             return True
 
+        # primeiro fecha janelas que estejam na frente (ex.: Gerenciador de Filtros).
+        # Enquanto uma delas estiver aberta, o botão "Sair" aparece atrás dela,
+        # mas o clique nele não funciona.
+        if clicar_imagem("data/botao_cancelar.png", confidence=0.8, timeout=2,
+                         descricao="Botão Cancelar", salvar_print=False):
+            time.sleep(2)
+            continue
+
         # se ainda estiver dentro da consulta, sai pelo botão do próprio sistema
         if clicar_imagem("data/sair_consumo.png", confidence=0.8, timeout=3,
                          descricao="Saindo do consumo", salvar_print=False):
             time.sleep(3)
-            continue
+            if localizar_imagem("data/opcao_genericos.png", confidence=0.8, timeout=5,
+                                descricao="Tela inicial (opção genéricos)"):
+                return True
 
-        # caso contrário, fecha o diálogo/janela que estiver na frente
+        # se o "Sair" não resolveu, alguma outra janela está na frente: tenta o Esc
         pyautogui.press('esc')
         time.sleep(3)
 
@@ -235,6 +246,16 @@ def processar_filial_consumo(filial, competencia):
     etapa("data/aplicar_filtro_selecionado.png", "Aplicar filtro selecionado",
           "Erro ao aplicar o filtro selecionado")
 
+    # Às vezes o clique em "Aplicar" não é registrado e o Gerenciador de Filtros
+    # continua aberto. Aí o "Exp. CSV" é clicado atrás da janela e nada acontece.
+    # Por isso confere se a janela fechou e, se não fechou, clica de novo.
+    if not aguardar_imagem_sumir("data/aplicar_filtro_selecionado.png", timeout=15):
+        print("⚠️  Gerenciador de Filtros ainda aberto, clicando em aplicar novamente...")
+        clicar_imagem("data/aplicar_filtro_selecionado.png", confidence=0.8, timeout=5,
+                      descricao="Aplicar filtro selecionado", salvar_print=False)
+        if not aguardar_imagem_sumir("data/aplicar_filtro_selecionado.png", timeout=30):
+            raise EtapaFalhou("O Gerenciador de Filtros não fechou após aplicar o filtro")
+
     time.sleep(2)
 
     etapa("data/export_csv.png", "Selecionar o tipo de opção export",
@@ -292,25 +313,29 @@ def processar_filial_consumo(filial, competencia):
     return "Arquivo exportado e movido com sucesso"
 
 
-def automacao_consumo(competencia, log=None):
+def automacao_consumo(competencia, log=None, filiais=None):
     """
     Automação de consumo.
 
     Args:
         competencia: data no formato "DD/MM/YYYY"
         log: instância de LogExecucao (opcional). Se informado, registra cada filial.
+        filiais: filiais a processar. Se não informado, usa todas de LISTA_FILIAIS.
     """
+    if filiais is None:
+        filiais = LISTA_FILIAIS
+
     # escolhe a opção do relatório de consumo
     if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=60, descricao="Menu Consumo"):
         msg = "Erro ao acessar o menu consultas"
         print(msg)
-        registrar_filiais_com_erro(log, LISTA_FILIAIS, msg)
+        registrar_filiais_com_erro(log, filiais, msg)
         return
 
     time.sleep(2)
 
     processar_filiais(
-        filiais=LISTA_FILIAIS,
+        filiais=filiais,
         processar_filial=lambda filial: processar_filial_consumo(filial, competencia),
         voltar_tela_inicial=voltar_tela_inicial_consumo,
         log=log,

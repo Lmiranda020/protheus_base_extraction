@@ -2,15 +2,47 @@ import pyautogui
 import time
 import os
 from dotenv import load_dotenv
-from modules.clicar_imagem import clicar_imagem
+from modules.clicar_imagem import clicar_imagem, salvar_print_erro
 from modules.centro_de_custo import automacao_centro_de_custo
 from modules.calcular_competencia import calcular_competencia
 from modules.consumo import automacao_consumo
 from modules.conectar_vpn import conectar_vpn
 from modules.abrir_app_agent import habilitar_app_agent
-from modules.logger_excel import LogExecucao
+from modules.logger_excel import LogExecucao, filiais_com_sucesso
 from modules.enviar_email import enviar_email_resultado
 from config.list_filial import LISTA_FILIAIS
+
+
+def filiais_pendentes(tipo, competencia, raiz_projeto):
+    """Filiais de LISTA_FILIAIS que ainda não têm sucesso no log para esse tipo e competência."""
+    ja_processadas = filiais_com_sucesso(raiz_projeto, tipo, competencia)
+    pendentes = [f for f in LISTA_FILIAIS if f not in ja_processadas]
+
+    print(f"📊 {tipo} ({competencia}): {len(LISTA_FILIAIS) - len(pendentes)} já processada(s), "
+          f"{len(pendentes)} pendente(s)")
+    if pendentes:
+        print(f"   Pendentes: {', '.join(pendentes)}")
+    return pendentes
+
+
+def executar_relatorio(tipo, automacao, competencia, filiais, raiz_projeto):
+    """Roda a automação do relatório só para as filiais informadas, grava o log e envia o e-mail."""
+    if not filiais:
+        print(f"✅ {tipo}: todas as filiais da competência {competencia} já foram processadas. Pulando.")
+        return
+
+    log = LogExecucao(raiz_projeto=raiz_projeto)
+    log.iniciar_execucao(
+        tipo=tipo,
+        competencia=competencia,
+        filiais=filiais,
+    )
+
+    automacao(competencia, log=log, filiais=filiais)
+
+    resumo = log.finalizar_execucao()
+    enviar_email_resultado(resumo)
+
 
 if __name__ == "__main__":
 
@@ -43,6 +75,17 @@ if __name__ == "__main__":
     except Exception as e:
         print("Erro ao carregar variáveis de ambiente:", e)
         exit(1)
+
+    # ── Filiais pendentes ─────────────────────────────────────────────────────
+    # Consulta o log para não processar de novo as filiais que já deram certo
+    # nessa competência (útil quando a automação é rodada mais de uma vez no mês)
+
+    pendentes_consumo = filiais_pendentes("Consumo", competencia_anterior, RAIZ_PROJETO)
+    pendentes_cc      = filiais_pendentes("Centro de Custo", competencia_anterior, RAIZ_PROJETO)
+
+    if not pendentes_consumo and not pendentes_cc:
+        print("✅ Nada pendente para essa competência. Encerrando sem abrir o sistema.")
+        exit(0)
 
     # ── Login no sistema ──────────────────────────────────────────────────────
 
@@ -88,43 +131,40 @@ if __name__ == "__main__":
 
     # ── Automação de CONSUMO ──────────────────────────────────────────────────
 
-    log_consumo = LogExecucao(raiz_projeto=RAIZ_PROJETO)
-    log_consumo.iniciar_execucao(
-        tipo="Consumo",
-        competencia=competencia_anterior,
-        filiais=LISTA_FILIAIS,
-    )
+    executar_relatorio("Consumo", automacao_consumo, competencia_anterior,
+                       pendentes_consumo, RAIZ_PROJETO)
 
-    automacao_consumo(competencia_anterior, log=log_consumo)
+    # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
 
-    resumo_consumo = log_consumo.finalizar_execucao()
-    enviar_email_resultado(resumo_consumo)
-
-    # # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
-
-    log_cc = LogExecucao(raiz_projeto=RAIZ_PROJETO)
-    log_cc.iniciar_execucao(
-        tipo="Centro de Custo",
-        competencia=competencia_anterior,
-        filiais=LISTA_FILIAIS,
-    )
-
-    automacao_centro_de_custo(competencia_anterior, log=log_cc)
-
-    resumo_cc = log_cc.finalizar_execucao()
-    enviar_email_resultado(resumo_cc)
+    executar_relatorio("Centro de Custo", automacao_centro_de_custo, competencia_anterior,
+                       pendentes_cc, RAIZ_PROJETO)
 
     # ── Encerramento ──────────────────────────────────────────────────────────
 
     print("Automação concluída com sucesso!")
 
-    pyautogui.keyDown('ctrl')
-    pyautogui.press('q')
-    pyautogui.keyUp('ctrl')
-    time.sleep(1)
+    finalizou = False
+    for _ in range(3):
+        pyautogui.keyDown('ctrl')
+        pyautogui.press('q')
+        pyautogui.keyUp('ctrl')
+        time.sleep(2)
 
-    if not clicar_imagem("data/botao_finalizar.png", confidence=0.8, timeout=15, descricao="Botão Finalizar"):
+        # se alguma consulta ficou aberta, o Protheus pergunta se pode
+        # interromper o processo da sessão atual: confirma com "Sim".
+        # confidence 0.9 para não confundir com o botão "Arquivo", que é parecido
+        if clicar_imagem("data/botao_sim_fechar_sessao.png", confidence=0.9, timeout=5,
+                         descricao="Sim (fechar sessão)", salvar_print=False):
+            time.sleep(3)
+
+        if clicar_imagem("data/botao_finalizar.png", confidence=0.8, timeout=15,
+                         descricao="Botão Finalizar", salvar_print=False):
+            finalizou = True
+            break
+
+    if not finalizou:
         print("Erro ao clicar no botão finalizar.")
+        salvar_print_erro("Botão Finalizar")
 
     pyautogui.press('f11')
 

@@ -354,14 +354,18 @@ def processar_filial_cc(filial, competencia):
     return f"Arquivo gerado e renomeado: {arquivo_final}"
 
 
-def automacao_centro_de_custo(competencia, log=None):
+def automacao_centro_de_custo(competencia, log=None, filiais=None):
     """
     Automação para download do relatório de centro de custo.
 
     Args:
         competencia: data no formato "DD/MM/YYYY"
         log: instância de LogExecucao (opcional). Se informado, registra cada filial.
+        filiais: filiais a processar. Se não informado, usa todas de LISTA_FILIAIS.
     """
+    if filiais is None:
+        filiais = LISTA_FILIAIS
+
     print("🚀 Iniciando automação do centro de custo...")
 
     time.sleep(2)
@@ -370,7 +374,7 @@ def automacao_centro_de_custo(competencia, log=None):
     if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=60, descricao="Menu Relatórios"):
         msg = "Erro ao acessar o menu Relatórios"
         print(msg)
-        registrar_filiais_com_erro(log, LISTA_FILIAIS, msg)
+        registrar_filiais_com_erro(log, filiais, msg)
         return
 
     time.sleep(2)
@@ -380,13 +384,13 @@ def automacao_centro_de_custo(competencia, log=None):
     if not clicar_imagem("data/opcao_smart_view.png", confidence=0.8, timeout=60, descricao="Opção Smart View"):
         msg = "Erro ao acessar a opção Smart View"
         print(msg)
-        registrar_filiais_com_erro(log, LISTA_FILIAIS, msg)
+        registrar_filiais_com_erro(log, filiais, msg)
         return
 
     time.sleep(2)
 
     processar_filiais(
-        filiais=LISTA_FILIAIS,
+        filiais=filiais,
         processar_filial=lambda filial: processar_filial_cc(filial, competencia),
         voltar_tela_inicial=voltar_tela_inicial_cc,
         log=log,

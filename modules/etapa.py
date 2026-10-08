@@ -1,3 +1,5 @@
+import time
+import pyautogui
 from datetime import datetime
 from modules.clicar_imagem import clicar_imagem
 
@@ -25,6 +27,26 @@ def etapa(imagem, descricao, msg_erro, confidence=0.8, timeout=TIMEOUT_PADRAO):
     """Clica na imagem ou lança EtapaFalhou com a mensagem informada."""
     if not clicar_imagem(imagem, confidence=confidence, timeout=timeout, descricao=descricao):
         raise EtapaFalhou(msg_erro)
+
+
+def aguardar_imagem_sumir(imagem, confidence=0.8, timeout=30):
+    """
+    Espera a imagem deixar de aparecer na tela (ex.: uma janela fechar).
+
+    Returns:
+        True se a imagem sumiu dentro do tempo, False caso contrário.
+    """
+    tempo_inicial = time.time()
+    while time.time() - tempo_inicial < timeout:
+        try:
+            if not pyautogui.locateOnScreen(imagem, confidence=confidence):
+                return True
+        except pyautogui.ImageNotFoundException:
+            return True
+        except Exception as e:
+            print(f"Erro ao procurar imagem: {e}")
+        time.sleep(1)
+    return False
 
 
 def registrar_filiais_com_erro(log, filiais, mensagem):
