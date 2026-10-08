@@ -87,13 +87,21 @@ def aguardar_download_completo(diretorio_temp, timeout=200, intervalo_verificaca
     
     # Timeout atingido
     print(f"⚠️  Timeout atingido ({timeout}s). Verificando se há arquivo disponível...")
-    arquivo_final, _ = obter_arquivo_mais_recente(diretorio_temp, '.csv')
-    
-    if arquivo_final:
-        print(f"📄 Arquivo encontrado (pode estar incompleto): {os.path.basename(arquivo_final)}")
+    arquivo_final, timestamp_final = obter_arquivo_mais_recente(diretorio_temp, '.csv')
+
+    # Só aceita se o arquivo for NOVO (gerado depois do início da espera).
+    # Antes, qualquer CSV antigo da pasta era aceito e podia ser renomeado
+    # com a filial errada.
+    arquivo_e_novo = arquivo_final and (
+        arquivo_final != arquivo_anterior or
+        (timestamp_final and timestamp_anterior and timestamp_final > timestamp_anterior)
+    )
+
+    if arquivo_e_novo:
+        print(f"📄 Arquivo novo encontrado (Excel não abriu): {os.path.basename(arquivo_final)}")
         return True, arquivo_final, timeout
     else:
-        print("❌ Nenhum arquivo CSV encontrado após timeout")
+        print("❌ Nenhum arquivo CSV novo encontrado após timeout")
         return False, None, timeout
 
 

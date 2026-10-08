@@ -15,28 +15,31 @@ def obter_arquivo_mais_recente(diretorio, extensao='.csv'):
         print(f"Erro ao buscar arquivo: {e}")
         return None
 
-def mover_e_renomear_csv(filial, competencia, diretorio_destino):
+def mover_e_renomear_csv(filial, competencia, diretorio_destino, arquivo_origem=None):
     """
-    Move o arquivo CSV mais recente e renomeia
-    
+    Move o arquivo CSV baixado e renomeia
+
     Args:
         filial: código da filial
         competencia: competência no formato DD/MM/YYYY
         diretorio_destino: caminho do diretório de destino
-    
+        arquivo_origem: caminho do arquivo baixado. Se não informado, usa o
+                        CSV mais recente do diretório temporário
+
     Returns:
         bool: True se sucesso, False se erro
     """
-    diretorio_temp = os.getenv("DIRETORIO_TEMP")
-    
-    if not diretorio_temp:
-        print("❌ Erro: variável de ambiente DIRETORIO_TEMP não configurada")
-        return False
-    
-    # Busca o arquivo mais recente
-    print("🔍 Buscando arquivo CSV mais recente...")
-    arquivo_origem = obter_arquivo_mais_recente(diretorio_temp, '.csv')
-    
+    if not arquivo_origem:
+        diretorio_temp = os.getenv("DIRETORIO_TEMP")
+
+        if not diretorio_temp:
+            print("❌ Erro: variável de ambiente DIRETORIO_TEMP não configurada")
+            return False
+
+        # Busca o arquivo mais recente
+        print("🔍 Buscando arquivo CSV mais recente...")
+        arquivo_origem = obter_arquivo_mais_recente(diretorio_temp, '.csv')
+
     if not arquivo_origem:
         print("❌ Nenhum arquivo CSV encontrado no diretório temporário")
         return False

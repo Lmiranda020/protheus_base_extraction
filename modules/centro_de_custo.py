@@ -1,4 +1,6 @@
 from modules.clicar_imagem import clicar_imagem
+from modules.localizar_imagem import localizar_imagem
+from modules.etapa import EtapaFalhou, etapa, processar_filiais, registrar_filiais_com_erro
 import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
@@ -167,6 +169,191 @@ def renomear_arquivo_baixado(caminho, nome_atual, nome_novo_sem_extensao):
         return None
 
 
+def voltar_tela_inicial_cc(tentativas=6):
+    """
+    Fecha o que estiver aberto até a opção "Centro de Custo" aparecer na tela
+    do Smart View (ponto de partida de cada filial).
+
+    Returns:
+        True se a tela inicial está visível, False caso contrário.
+    """
+    for _ in range(tentativas):
+        if localizar_imagem("data/opcao_centro_de_custo.png", confidence=0.9, timeout=5,
+                            descricao="Tela inicial (opção Centro de Custo)"):
+            return True
+
+        # se a exportação terminou, o botão OK leva de volta à lista de relatórios
+        if clicar_imagem("data/botao_ok.png", confidence=0.8, timeout=3,
+                         descricao="Botão OK", salvar_print=False):
+            time.sleep(3)
+            continue
+
+        # caso contrário, fecha o diálogo/janela que estiver na frente
+        pyautogui.press('esc')
+        time.sleep(3)
+
+    return False
+
+
+def processar_filial_cc(filial, competencia):
+    """
+    Exporta o relatório de centro de custo de UMA filial.
+
+    Returns:
+        Mensagem de sucesso para o log.
+
+    Raises:
+        EtapaFalhou: se alguma etapa não puder ser concluída.
+    """
+    # Definir o caminho do diretório
+    data = datetime.strptime(competencia, "%d/%m/%Y")
+    ano  = data.year
+    mes  = str(data.month).zfill(2)   # corrigido: zfill em vez de len check
+    caminho_fixo = os.getenv("CAMINHO_FIXO_CC")
+    caminho_fixo_completo = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
+    print(f"📂 Caminho: {caminho_fixo_completo}")
+
+    # ANTES DO DOWNLOAD: listar arquivos existentes na rede
+    # (isso é o que garante que, ao comparar depois, a gente saiba
+    # exatamente qual arquivo é novo e precisa ser renomeado)
+    print("📋 Listando arquivos existentes no diretório...")
+    arquivos_antes = listar_arquivos_diretorio(caminho_fixo_completo)
+    print(f"   Arquivos encontrados: {len(arquivos_antes)}")
+    for arquivo in list(arquivos_antes.keys())[:3]:
+        print(f"   - {arquivo}")
+    if len(arquivos_antes) > 3:
+        print(f"   ... e mais {len(arquivos_antes) - 3} arquivo(s)")
+
+    time.sleep(2)
+
+    # clicar na opção "Centro de Custo"
+    etapa("data/opcao_centro_de_custo.png", "Opção Centro de Custo",
+          "Erro ao acessar a opção Centro de Custo", confidence=0.9)
+
+    time.sleep(2)
+
+    # navegar até o campo de filial
+    pyautogui.press('tab', presses=2, interval=0.5)
+
+    pyautogui.keyDown('ctrl')
+    pyautogui.press('a')
+    pyautogui.keyUp('ctrl')
+    pyautogui.press('backspace')
+
+    pyautogui.write(filial, interval=0.1)
+    time.sleep(2)
+
+    etapa("data/botao_confirmar.png", "Botão Confirmar",
+          "Erro ao clicar no botão Confirmar")
+
+    time.sleep(5)
+
+    # clicar no botão reforma tributaria (nem sempre aparece, então não é erro)
+    if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.8, timeout=15,
+                         descricao="Botão Reforma Tributária", salvar_print=False):
+        print("Botão Reforma Tributária não apareceu, seguindo.")
+
+    time.sleep(8)
+
+    # clicar no menu "planilha"
+    etapa("data/opcao_exportar.png", "Menu Planilha",
+          "Erro ao clicar na opção selecionada para exportar planilha")
+
+    time.sleep(2)
+
+    # clica em confirmar o tipo de exportação escolhido
+    etapa("data/botao_confirmar_exportacao.png", "Botão Confirmar Exportação",
+          "Erro ao clicar no botão Confirmar Exportação")
+
+    time.sleep(8)
+
+    # selecionar o tipo de extensão do arquivo csv
+    etapa("data/opcao_tipo_csv.png", "Opção Tipo CSV",
+          "Erro ao selecionar o tipo CSV", timeout=1800)
+
+    time.sleep(3)
+
+    # clica na opção diretorio
+    etapa("data/opcao_diretorio.png", "Opção Diretório",
+          "Erro ao clicar na opção diretório")
+
+    time.sleep(2)
+
+    # clicar no campo input para renomear o arquivo
+    etapa("data/input_nome_arquivo.png", "Input Nome do Arquivo",
+          "Erro ao clicar no input de nome do arquivo")
+
+    pyautogui.keyDown('ctrl')
+    pyautogui.press('a')
+    pyautogui.keyUp('ctrl')
+    pyautogui.press('backspace')
+
+    # Nome final desejado para o arquivo (sem extensão — a extensão é
+    # preservada automaticamente na hora de renomear, depois do download)
+    nome_arquivo = f"CC_{filial}_{competencia.replace('/', '-')}"
+
+    # junta o nome do diretorio com o nome do arquivo
+    caminho_fixo_completo_p_digitar = caminho_fixo_completo
+    pyautogui.write(caminho_fixo_completo_p_digitar, interval=0.1)
+    pyautogui.press('enter')
+    time.sleep(2)
+
+    # marca o horário ANTES do clique em "Salvar Arquivo Final" — é esse
+    # clique que efetivamente dispara a exportação/gravação do arquivo na
+    # rede (o botão "Download" logo depois é só confirmação/acompanhamento
+    # da UI), então a referência de horário precisa vir de antes dele,
+    # não depois. Uma margem de segurança extra é aplicada na comparação
+    # dentro de aguardar_novo_arquivo pra absorver qualquer delay residual.
+    momento_download = datetime.now()
+
+    # clicar no botão "Salvar" da janela de salvar arquivo
+    etapa("data/botao_salvar_arquivo_final.png", "Botão Salvar Arquivo",
+          "Erro ao clicar no botão Salvar Arquivo na janela de salvar", confidence=0.9)
+
+    print("🔍 Aguardando conclusão do download...")
+
+    time.sleep(2)
+
+    # clica no botao de download
+    etapa("data/botao_download.png", "Botão Download",
+          "Erro ao clicar no botão Download")
+
+    novo_arquivo = aguardar_novo_arquivo(
+        caminho=caminho_fixo_completo,
+        arquivos_antes=arquivos_antes,
+        momento_download=momento_download,
+        timeout=600,
+        intervalo=2,
+        margem_seguranca_segundos=30
+    )
+
+    if not novo_arquivo:
+        raise EtapaFalhou("Download não detectado no tempo esperado (timeout 600s)")
+
+    print(f"📄 Arquivo baixado: {novo_arquivo}")
+
+    # Renomeia o arquivo pro padrão CC_{filial}_{competencia}
+    arquivo_final = renomear_arquivo_baixado(
+        caminho=caminho_fixo_completo,
+        nome_atual=novo_arquivo,
+        nome_novo_sem_extensao=nome_arquivo
+    )
+
+    if not arquivo_final:
+        # Download ocorreu, mas o rename falhou — registra como falha pra ficar
+        # visível no log. Não tenta de novo para não gerar arquivo duplicado.
+        raise EtapaFalhou(f"Download concluído como '{novo_arquivo}', "
+                          f"mas falhou ao renomear para '{nome_arquivo}'",
+                          tentar_novamente=False)
+
+    # clica no botão ok para ir para a proxima filial. O arquivo já foi salvo,
+    # então uma falha aqui não refaz a filial: a próxima volta para a tela inicial.
+    if not clicar_imagem("data/botao_ok.png", confidence=0.8, timeout=60, descricao="Botão OK"):
+        print("⚠️  Erro ao clicar no botão OK (o arquivo já foi salvo).")
+
+    return f"Arquivo gerado e renomeado: {arquivo_final}"
+
+
 def automacao_centro_de_custo(competencia, log=None):
     """
     Automação para download do relatório de centro de custo.
@@ -179,243 +366,36 @@ def automacao_centro_de_custo(competencia, log=None):
 
     time.sleep(2)
 
-    # clicar em consultas 
-    if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=15, descricao="Menu Relatórios"):
-        print("Erro ao acessar o menu Relatórios.")
+    # clicar em consultas
+    if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=60, descricao="Menu Relatórios"):
+        msg = "Erro ao acessar o menu Relatórios"
+        print(msg)
+        registrar_filiais_com_erro(log, LISTA_FILIAIS, msg)
         return
-    
+
     time.sleep(2)
 
-    # clicar na opção smart view
-    if not clicar_imagem("data/opcao_smart_view.png", confidence=0.8, timeout=15, descricao="Opção Smart View"):
+    # clicar na opção smart view. A falha acontece antes de qualquer filial,
+    # então todas ficam registradas como não processadas.
+    if not clicar_imagem("data/opcao_smart_view.png", confidence=0.8, timeout=60, descricao="Opção Smart View"):
         msg = "Erro ao acessar a opção Smart View"
         print(msg)
-        if log:
-            log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                    inicio_filial=inicio_filial)
+        registrar_filiais_com_erro(log, LISTA_FILIAIS, msg)
         return
 
     time.sleep(2)
 
-    for filial in LISTA_FILIAIS:
-        inicio_filial = datetime.now()
-
-        print(f"\n{'='*60}")
-        print(f"🏢 Processando filial: {filial}")
-        print(f"{'='*60}\n")
-
-        # Definir o caminho do diretório
-        data = datetime.strptime(competencia, "%d/%m/%Y")
-        ano  = data.year
-        mes  = str(data.month).zfill(2)   # corrigido: zfill em vez de len check
-        caminho_fixo = os.getenv("CAMINHO_FIXO_CC")
-        caminho_fixo_completo = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
-        print(f"📂 Caminho: {caminho_fixo_completo}")
-
-        # ANTES DO DOWNLOAD: listar arquivos existentes na rede
-        # (isso é o que garante que, ao comparar depois, a gente saiba
-        # exatamente qual arquivo é novo e precisa ser renomeado)
-        print("📋 Listando arquivos existentes no diretório...")
-        arquivos_antes = listar_arquivos_diretorio(caminho_fixo_completo)
-        print(f"   Arquivos encontrados: {len(arquivos_antes)}")
-        for arquivo in list(arquivos_antes.keys())[:3]:
-            print(f"   - {arquivo}")
-        if len(arquivos_antes) > 3:
-            print(f"   ... e mais {len(arquivos_antes) - 3} arquivo(s)")
-
-        time.sleep(2)
-
-        # clicar na opção "Centro de Custo"
-        if not clicar_imagem("data/opcao_centro_de_custo.png", confidence=0.9, timeout=15, descricao="Opção Centro de Custo"):
-            msg = "Erro ao acessar a opção Centro de Custo"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        time.sleep(2)
-
-        # navegar até o campo de filial
-        pyautogui.press('tab', presses=2, interval=0.5)
-
-        pyautogui.keyDown('ctrl')
-        pyautogui.press('a')
-        pyautogui.keyUp('ctrl')
-        pyautogui.press('backspace')
-
-        pyautogui.write(filial, interval=0.1)
-        time.sleep(2)
-
-        if not clicar_imagem("data/botao_confirmar.png", confidence=0.8, timeout=15, descricao="Botão Confirmar"):
-            msg = "Erro ao clicar no botão Confirmar"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        time.sleep(5)
-
-        # clicar no botão reforma tributaria
-        if not clicar_imagem("data/botao_reforma_tributaria.png", confidence=0.8, timeout=15, descricao="Botão Reforma Tributária"):
-            print("Erro ao clicar no botão Reforma Tributária.")
-
-        time.sleep(8)
-
-        # clicar no menu "planilha"
-        if not clicar_imagem("data/opcao_exportar.png", confidence=0.8, timeout=15, descricao="Menu Planilha"):
-            msg = "Erro ao clicar na opção selecionada para exportar planilha"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        time.sleep(2)
-
-        # clica em confirmar o tipo de exportação escolhido
-        if not clicar_imagem("data/botao_confirmar_exportacao.png", confidence=0.8, timeout=15, descricao="Botão Confirmar Exportação"):
-            msg = "Erro ao clicar no botão Confirmar Exportação"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        time.sleep(8)
-
-        # selecionar o tipo de extensão do arquivo csv
-        if not clicar_imagem("data/opcao_tipo_csv.png", confidence=0.8, timeout=1800, descricao="Opção Tipo CSV"):
-            msg = "Erro ao selecionar o tipo CSV"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        time.sleep(3)
-
-        # clica na opção diretorio
-        if not clicar_imagem("data/opcao_diretorio.png", confidence=0.8, timeout=15, descricao="Opção Diretório"):
-            msg = "Erro ao clicar na opção diretório"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        time.sleep(2)
-
-        # clicar no campo input para renomear o arquivo
-        if not clicar_imagem("data/input_nome_arquivo.png", confidence=0.8, timeout=15, descricao="Input Nome do Arquivo"):
-            msg = "Erro ao clicar no input de nome do arquivo"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        pyautogui.keyDown('ctrl')
-        pyautogui.press('a')
-        pyautogui.keyUp('ctrl')
-        pyautogui.press('backspace')
-
-        # Nome final desejado para o arquivo (sem extensão — a extensão é
-        # preservada automaticamente na hora de renomear, depois do download)
-        nome_arquivo = f"CC_{filial}_{competencia.replace('/', '-')}"
-
-        # junta o nome do diretorio com o nome do arquivo
-        caminho_fixo_completo_p_digitar = caminho_fixo_completo
-        pyautogui.write(caminho_fixo_completo_p_digitar, interval=0.1)
-        pyautogui.press('enter')
-        time.sleep(2)
-
-        # marca o horário ANTES do clique em "Salvar Arquivo Final" — é esse
-        # clique que efetivamente dispara a exportação/gravação do arquivo na
-        # rede (o botão "Download" logo depois é só confirmação/acompanhamento
-        # da UI), então a referência de horário precisa vir de antes dele,
-        # não depois. Uma margem de segurança extra é aplicada na comparação
-        # dentro de aguardar_novo_arquivo pra absorver qualquer delay residual.
-        momento_download = datetime.now()
-
-        # clicar no botão "Salvar" da janela de salvar arquivo
-        if not clicar_imagem("data/botao_salvar_arquivo_final.png", confidence=0.9, timeout=15, descricao="Botão Salvar Arquivo"):
-            msg = "Erro ao clicar no botão Salvar Arquivo na janela de salvar"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        print("🔍 Aguardando conclusão do download...")
-
-        time.sleep(2)
-
-        # clica no botao de download
-        if not clicar_imagem("data/botao_download.png", confidence=0.8, timeout=15, descricao="Botão Download"):
-            msg = "Erro ao clicar no botão Download"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
-
-        novo_arquivo = aguardar_novo_arquivo(
-            caminho=caminho_fixo_completo,
-            arquivos_antes=arquivos_antes,
-            momento_download=momento_download,
-            timeout=600,
-            intervalo=2,
-            margem_seguranca_segundos=30
-        )
-
-        if novo_arquivo:
-            print(f"✅ Filial {filial} processada com sucesso!")
-            print(f"📄 Arquivo baixado: {novo_arquivo}")
-
-            # Renomeia o arquivo pro padrão CC_{filial}_{competencia}
-            arquivo_final = renomear_arquivo_baixado(
-                caminho=caminho_fixo_completo,
-                nome_atual=novo_arquivo,
-                nome_novo_sem_extensao=nome_arquivo
-            )
-
-            if arquivo_final:
-                if log:
-                    log.registrar_filial(filial, sucesso=True,
-                                         mensagem=f"Arquivo gerado e renomeado: {arquivo_final}",
-                                         inicio_filial=inicio_filial)
-            else:
-                # Download ocorreu, mas o rename falhou — registra como falha
-                # pra ficar visível no log que essa filial precisa de atenção
-                msg = (f"Download concluído como '{novo_arquivo}', "
-                       f"mas falhou ao renomear para '{nome_arquivo}'")
-                print(f"⚠️  {msg}")
-                if log:
-                    log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                         inicio_filial=inicio_filial)
-        else:
-            msg = "Download não detectado no tempo esperado (timeout 600s)"
-            print(f"⚠️  Filial {filial} — {msg}")
-            print("   Continuando para próxima filial...")
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-
-        # clica no botão ok para ir para a proxima filial
-        if not clicar_imagem("data/botao_ok.png", confidence=0.8, timeout=15, descricao="Botão OK"):
-            msg = "Erro ao clicar no botão OK para ir para a próxima filial"
-            print(msg)
-            if log:
-                log.registrar_filial(filial, sucesso=False, mensagem=msg,
-                                     inicio_filial=inicio_filial)
-            return
+    processar_filiais(
+        filiais=LISTA_FILIAIS,
+        processar_filial=lambda filial: processar_filial_cc(filial, competencia),
+        voltar_tela_inicial=voltar_tela_inicial_cc,
+        log=log,
+    )
 
     # fecha o menu Relatórios aberto no início
     if not clicar_imagem("data/menu_relatorios.png", confidence=0.8, timeout=15, descricao="Menu Relatórios"):
         print("Erro ao fechar o menu Relatórios.")
 
     print("\n" + "="*60)
-    print("✅ Automação do centro de custo concluída para todas as filiais!")
+    print("✅ Automação do centro de custo concluída!")
     print("="*60)
