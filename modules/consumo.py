@@ -1,7 +1,7 @@
 from modules.clicar_imagem import clicar_imagem
 from modules.localizar_imagem import localizar_imagem
-from modules.etapa import (EtapaFalhou, etapa, aguardar_imagem_sumir, processar_filiais,
-                           registrar_filiais_com_erro)
+from modules.etapa import (EtapaFalhou, etapa, aguardar_imagem_sumir, fechar_aba_atual,
+                           processar_filiais, registrar_filiais_com_erro)
 import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
@@ -40,7 +40,11 @@ def voltar_tela_inicial_consumo(tentativas=6):
                                 descricao="Tela inicial (opção genéricos)"):
                 return True
 
-        # se o "Sair" não resolveu, alguma outra janela está na frente: tenta o Esc
+        # se o "Sair" não resolveu, fecha a aba da rotina ("Genéricos - 01/...")
+        if fechar_aba_atual():
+            continue
+
+        # se nada disso resolveu, alguma outra janela está na frente: tenta o Esc
         pyautogui.press('esc')
         time.sleep(3)
 

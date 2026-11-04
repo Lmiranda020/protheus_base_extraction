@@ -10,6 +10,7 @@ from modules.conectar_vpn import conectar_vpn
 from modules.abrir_app_agent import habilitar_app_agent
 from modules.logger_excel import LogExecucao, filiais_com_sucesso
 from modules.enviar_email import enviar_email_resultado
+from modules.etapa import fechar_aba_atual
 from config.list_filial import LISTA_FILIAIS
 
 
@@ -131,8 +132,8 @@ if __name__ == "__main__":
 
     # ── Automação de CONSUMO ──────────────────────────────────────────────────
 
-    executar_relatorio("Consumo", automacao_consumo, competencia_anterior,
-                       pendentes_consumo, RAIZ_PROJETO)
+    # executar_relatorio("Consumo", automacao_consumo, competencia_anterior,
+    #                    pendentes_consumo, RAIZ_PROJETO)
 
     # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
 
@@ -161,6 +162,10 @@ if __name__ == "__main__":
                          descricao="Botão Finalizar", salvar_print=False):
             finalizou = True
             break
+
+        # o Ctrl+Q não funciona enquanto uma tela do Smart View estiver aberta
+        # (ela "segura" o teclado): fecha a aba da rotina e tenta de novo
+        fechar_aba_atual()
 
     if not finalizou:
         print("Erro ao clicar no botão finalizar.")

@@ -2,6 +2,7 @@ import time
 import pyautogui
 from datetime import datetime
 from modules.clicar_imagem import clicar_imagem
+from modules.localizar_imagem import localizar_imagem
 
 # Tempo máximo para esperar um botão aparecer. O clicar_imagem clica assim que
 # encontra a imagem, então um valor alto só "custa" tempo quando o sistema está lento.
@@ -27,6 +28,46 @@ def etapa(imagem, descricao, msg_erro, confidence=0.8, timeout=TIMEOUT_PADRAO):
     """Clica na imagem ou lança EtapaFalhou com a mensagem informada."""
     if not clicar_imagem(imagem, confidence=confidence, timeout=timeout, descricao=descricao):
         raise EtapaFalhou(msg_erro)
+
+
+def etapa_com_confirmacao(imagem, descricao, msg_erro, imagem_esperada, confidence=0.8,
+                          timeout=TIMEOUT_PADRAO, espera_confirmacao=15, tentativas=3):
+    """
+    Clica na imagem e confere se a tela seguinte apareceu (imagem_esperada).
+    Às vezes o sistema só destaca a opção, sem selecionar de fato; nesse caso
+    clica de novo. Se mesmo assim não aparecer, segue: a próxima etapa espera
+    a imagem e registra o erro (com print) se ela não vier.
+    """
+    etapa(imagem, descricao, msg_erro, confidence=confidence, timeout=timeout)
+
+    for tentativa in range(1, tentativas + 1):
+        if localizar_imagem(imagem_esperada, timeout=espera_confirmacao,
+                            descricao=f"Confirmação após '{descricao}'"):
+            return
+        if tentativa < tentativas:
+            print(f"⚠️  A tela seguinte não apareceu, clicando em '{descricao}' novamente...")
+            clicar_imagem(imagem, confidence=confidence, timeout=10,
+                          descricao=descricao, salvar_print=False)
+
+
+def fechar_aba_atual():
+    """
+    Fecha a aba da rotina aberta no Protheus (o ⊗ ao lado do nome da aba,
+    ex.: "Centro de Custo - 01/01010057") e confirma com "Sim" se o sistema
+    perguntar se pode interromper o processo.
+
+    Returns:
+        True se encontrou e clicou no ⊗, False caso contrário.
+    """
+    if not clicar_imagem("data/fechar_aba.png", confidence=0.9, timeout=3,
+                         descricao="Fechar aba", salvar_print=False):
+        return False
+    time.sleep(2)
+    # confidence 0.9 para não confundir com o botão "Arquivo", que é parecido
+    if clicar_imagem("data/botao_sim_fechar_sessao.png", confidence=0.9, timeout=5,
+                     descricao="Sim (fechar sessão)", salvar_print=False):
+        time.sleep(3)
+    return True
 
 
 def aguardar_imagem_sumir(imagem, confidence=0.8, timeout=30):

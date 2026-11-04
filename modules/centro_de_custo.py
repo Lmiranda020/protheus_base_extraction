@@ -1,6 +1,7 @@
 from modules.clicar_imagem import clicar_imagem
 from modules.localizar_imagem import localizar_imagem
-from modules.etapa import EtapaFalhou, etapa, processar_filiais, registrar_filiais_com_erro
+from modules.etapa import (EtapaFalhou, etapa, etapa_com_confirmacao, fechar_aba_atual,
+                           processar_filiais, registrar_filiais_com_erro)
 import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
@@ -169,7 +170,7 @@ def renomear_arquivo_baixado(caminho, nome_atual, nome_novo_sem_extensao):
         return None
 
 
-def voltar_tela_inicial_cc(tentativas=6):
+def voltar_tela_inicial_cc(tentativas=4):
     """
     Fecha o que estiver aberto até a opção "Centro de Custo" aparecer na tela
     do Smart View (ponto de partida de cada filial).
@@ -177,20 +178,37 @@ def voltar_tela_inicial_cc(tentativas=6):
     Returns:
         True se a tela inicial está visível, False caso contrário.
     """
+    def tela_inicial_visivel():
+        return localizar_imagem("data/opcao_centro_de_custo.png", confidence=0.9, timeout=5,
+                                descricao="Tela inicial (opção Centro de Custo)")
+
     for _ in range(tentativas):
-        if localizar_imagem("data/opcao_centro_de_custo.png", confidence=0.9, timeout=5,
-                            descricao="Tela inicial (opção Centro de Custo)"):
+        if tela_inicial_visivel():
             return True
 
-        # se a exportação terminou, o botão OK leva de volta à lista de relatórios
+        # fecha a janela do Smart View, se estiver aberta (botão "Fechar")
         if clicar_imagem("data/botao_ok.png", confidence=0.8, timeout=3,
-                         descricao="Botão OK", salvar_print=False):
+                         descricao="Botão Fechar", salvar_print=False):
             time.sleep(3)
+            if tela_inicial_visivel():
+                return True
+
+        # a tela do relatório ("Cadastro de Centro de Custo") não fecha com Esc:
+        # fecha a aba da rotina
+        if fechar_aba_atual():
             continue
 
-        # caso contrário, fecha o diálogo/janela que estiver na frente
         pyautogui.press('esc')
         time.sleep(3)
+
+    # o menu pode ter sido recolhido: reabre Smart View (e, se preciso, Consultas)
+    for passos in (["opcao_smart_view"], ["menu_consultas", "opcao_smart_view"]):
+        for imagem in passos:
+            clicar_imagem(f"data/{imagem}.png", confidence=0.8, timeout=5,
+                          descricao=imagem, salvar_print=False)
+            time.sleep(2)
+        if tela_inicial_visivel():
+            return True
 
     return False
 
@@ -267,11 +285,14 @@ def processar_filial_cc(filial, competencia):
 
     time.sleep(8)
 
-    # selecionar o tipo de extensão do arquivo csv
-    etapa("data/opcao_tipo_csv.png", "Opção Tipo CSV",
-          "Erro ao selecionar o tipo CSV", timeout=1800)
+    # selecionar o tipo de extensão do arquivo csv. Às vezes o clique só destaca
+    # o "CSV" e o "Em tela" continua marcado, então o botão "Diretório" não
+    # aparece: confere e, se preciso, clica no CSV de novo
+    etapa_com_confirmacao("data/opcao_tipo_csv.png", "Opção Tipo CSV",
+                          "Erro ao selecionar o tipo CSV",
+                          imagem_esperada="data/opcao_diretorio.png", timeout=1800)
 
-    time.sleep(3)
+    time.sleep(1)
 
     # clica na opção diretorio
     etapa("data/opcao_diretorio.png", "Opção Diretório",
