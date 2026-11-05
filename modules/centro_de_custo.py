@@ -2,6 +2,7 @@ from modules.clicar_imagem import clicar_imagem
 from modules.localizar_imagem import localizar_imagem
 from modules.etapa import (EtapaFalhou, etapa, etapa_com_confirmacao, fechar_aba_atual,
                            processar_filiais, registrar_filiais_com_erro)
+from modules.navegacao import abrir_menu, preparar_tela_inicial
 import time
 from config.list_filial import LISTA_FILIAIS
 import pyautogui
@@ -170,6 +171,10 @@ def renomear_arquivo_baixado(caminho, nome_atual, nome_novo_sem_extensao):
         return None
 
 
+# caminho no menu do Protheus até a opção "Centro de Custo"
+MENU_CENTRO_DE_CUSTO = ["data/menu_consultas.png", "data/opcao_smart_view.png"]
+
+
 def voltar_tela_inicial_cc(tentativas=4):
     """
     Fecha o que estiver aberto até a opção "Centro de Custo" aparecer na tela
@@ -201,16 +206,9 @@ def voltar_tela_inicial_cc(tentativas=4):
         pyautogui.press('esc')
         time.sleep(3)
 
-    # o menu pode ter sido recolhido: reabre Smart View (e, se preciso, Consultas)
-    for passos in (["opcao_smart_view"], ["menu_consultas", "opcao_smart_view"]):
-        for imagem in passos:
-            clicar_imagem(f"data/{imagem}.png", confidence=0.8, timeout=5,
-                          descricao=imagem, salvar_print=False)
-            time.sleep(2)
-        if tela_inicial_visivel():
-            return True
-
-    return False
+    # o menu pode ter sido recolhido: reabre só os níveis que estiverem fechados
+    return abrir_menu(MENU_CENTRO_DE_CUSTO, "data/opcao_centro_de_custo.png",
+                      confidence_destino=0.9)
 
 
 def processar_filial_cc(filial, competencia):
@@ -391,19 +389,17 @@ def automacao_centro_de_custo(competencia, log=None, filiais=None):
 
     time.sleep(2)
 
-    # clicar em consultas
-    if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=60, descricao="Menu Relatórios"):
-        msg = "Erro ao acessar o menu Relatórios"
+    # já está dentro do sistema (ex.: logo após o Consumo): só garante que
+    # nenhuma rotina ficou aberta e abre Consultas > Smart View se precisar.
+    # A falha acontece antes de qualquer filial, então todas ficam registradas.
+    if not preparar_tela_inicial():
+        msg = "O sistema não está na tela inicial para começar o Centro de Custo"
         print(msg)
         registrar_filiais_com_erro(log, filiais, msg)
         return
 
-    time.sleep(2)
-
-    # clicar na opção smart view. A falha acontece antes de qualquer filial,
-    # então todas ficam registradas como não processadas.
-    if not clicar_imagem("data/opcao_smart_view.png", confidence=0.8, timeout=60, descricao="Opção Smart View"):
-        msg = "Erro ao acessar a opção Smart View"
+    if not abrir_menu(MENU_CENTRO_DE_CUSTO, "data/opcao_centro_de_custo.png", confidence_destino=0.9):
+        msg = "Erro ao abrir o menu Consultas > Smart View > Centro de Custo"
         print(msg)
         registrar_filiais_com_erro(log, filiais, msg)
         return
@@ -416,10 +412,6 @@ def automacao_centro_de_custo(competencia, log=None, filiais=None):
         voltar_tela_inicial=voltar_tela_inicial_cc,
         log=log,
     )
-
-    # fecha o menu Relatórios aberto no início
-    if not clicar_imagem("data/menu_relatorios.png", confidence=0.8, timeout=15, descricao="Menu Relatórios"):
-        print("Erro ao fechar o menu Relatórios.")
 
     print("\n" + "="*60)
     print("✅ Automação do centro de custo concluída!")

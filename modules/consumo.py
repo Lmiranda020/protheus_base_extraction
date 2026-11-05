@@ -10,7 +10,12 @@ from modules.mover_e_renomear_arquivo_baixado import mover_e_renomear_csv
 from modules.aguardar_download_inteligente import (aguardar_download_completo, fechar_excel,
                                                    contar_linhas_de_dados)
 from modules.logger_excel import MSG_SEM_MOVIMENTACAO
+from modules.navegacao import abrir_menu, preparar_tela_inicial
 import os
+
+
+# caminho no menu do Protheus até a opção "Genéricos"
+MENU_CONSUMO = ["data/menu_consultas.png"]
 
 
 def voltar_tela_inicial_consumo(tentativas=6):
@@ -51,14 +56,7 @@ def voltar_tela_inicial_consumo(tentativas=6):
         time.sleep(3)
 
     # última tentativa: o menu consultas pode ter sido recolhido
-    if clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=5,
-                     descricao="Menu Consultas", salvar_print=False):
-        time.sleep(2)
-        if localizar_imagem("data/opcao_genericos.png", confidence=0.8, timeout=10,
-                            descricao="Tela inicial (opção genéricos)"):
-            return True
-
-    return False
+    return abrir_menu(MENU_CONSUMO, "data/opcao_genericos.png")
 
 
 def processar_filial_consumo(filial, competencia):
@@ -340,8 +338,15 @@ def automacao_consumo(competencia, log=None, filiais=None):
     if filiais is None:
         filiais = LISTA_FILIAIS
 
-    # escolhe a opção do relatório de consumo
-    if not clicar_imagem("data/menu_consultas.png", confidence=0.8, timeout=60, descricao="Menu Consumo"):
+    # já está dentro do sistema (ex.: logo após o Centro de Custo): só garante que
+    # nenhuma rotina ficou aberta e abre o menu Consultas se ele estiver fechado
+    if not preparar_tela_inicial():
+        msg = "O sistema não está na tela inicial para começar o Consumo"
+        print(msg)
+        registrar_filiais_com_erro(log, filiais, msg)
+        return
+
+    if not abrir_menu(MENU_CONSUMO, "data/opcao_genericos.png"):
         msg = "Erro ao acessar o menu consultas"
         print(msg)
         registrar_filiais_com_erro(log, filiais, msg)
