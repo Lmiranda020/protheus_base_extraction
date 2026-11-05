@@ -41,6 +41,28 @@ def _montar_html(resumo: dict) -> str:
     tab_ok  = _html_tabela_filiais(ok_lst,  "#43a047", "✅")
     tab_err = _html_tabela_filiais(err_lst, "#e53935", "❌")
 
+    # filiais cujo relatório veio sem dados (contam como sucesso, mas precisam ser informadas)
+    sem_mov_lst = resumo.get("filiais_sem_mov", [])
+    secao_sem_mov = ""
+    if sem_mov_lst:
+        secao_sem_mov = f"""
+        <!-- Filiais sem movimentação -->
+        <tr>
+          <td style="padding:16px 32px 0">
+            <h3 style="margin:0 0 8px;color:#e65100;font-size:14px">
+              ⚠️ FILIAIS SEM MOVIMENTAÇÃO NA COMPETÊNCIA ({len(sem_mov_lst)})
+            </h3>
+            <div style="border:1px solid #ffe0b2;background:#fff8f0;
+                        border-radius:6px;padding:12px">
+              {_html_tabela_filiais(sem_mov_lst, "#fb8c00", "⚠️")}
+              <p style="margin:8px 0 0;font-size:12px;color:#666">
+                O relatório foi gerado e salvo, mas veio só com o cabeçalho (nenhum registro no mês).
+              </p>
+            </div>
+          </td>
+        </tr>
+"""
+
     return f"""
 <!DOCTYPE html>
 <html>
@@ -165,7 +187,7 @@ def _montar_html(resumo: dict) -> str:
             </div>
           </td>
         </tr>
-
+{secao_sem_mov}
         <!-- Rodapé -->
         <tr>
           <td style="padding:24px 32px;border-top:1px solid #e0e0e0;margin-top:20px">

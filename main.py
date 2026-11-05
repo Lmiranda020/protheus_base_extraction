@@ -132,8 +132,8 @@ if __name__ == "__main__":
 
     # ── Automação de CONSUMO ──────────────────────────────────────────────────
 
-    # executar_relatorio("Consumo", automacao_consumo, competencia_anterior,
-    #                    pendentes_consumo, RAIZ_PROJETO)
+    executar_relatorio("Consumo", automacao_consumo, competencia_anterior,
+                       pendentes_consumo, RAIZ_PROJETO)
 
     # ── Automação de CENTRO DE CUSTO ─────────────────────────────────────────
 

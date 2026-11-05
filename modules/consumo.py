@@ -7,7 +7,9 @@ from config.list_filial import LISTA_FILIAIS
 import pyautogui
 from datetime import datetime
 from modules.mover_e_renomear_arquivo_baixado import mover_e_renomear_csv
-from modules.aguardar_download_inteligente import aguardar_download_completo, fechar_excel
+from modules.aguardar_download_inteligente import (aguardar_download_completo, fechar_excel,
+                                                   contar_linhas_de_dados)
+from modules.logger_excel import MSG_SEM_MOVIMENTACAO
 import os
 
 
@@ -301,6 +303,13 @@ def processar_filial_consumo(filial, competencia):
     diretorio_destino = f"{caminho_fixo}\\{ano}\\{mes}_{ano}"
     print(f"📂 Caminho: {diretorio_destino}")
 
+    # confere se o relatório veio com dados (sem movimentação = só o cabeçalho)
+    linhas_de_dados = contar_linhas_de_dados(arquivo_baixado)
+    if linhas_de_dados == 0:
+        print(f"⚠️  Filial {filial} sem movimentação na competência (arquivo só com o cabeçalho).")
+    elif linhas_de_dados is not None:
+        print(f"📊 Linhas de dados no arquivo: {linhas_de_dados}")
+
     print("Processando arquivo baixado...")
     if not mover_e_renomear_csv(filial, competencia, diretorio_destino,
                                 arquivo_origem=arquivo_baixado):
@@ -314,6 +323,8 @@ def processar_filial_consumo(filial, competencia):
                          descricao="Saindo do consumo"):
         print("⚠️  Erro ao sair do consumo (o arquivo já foi salvo).")
 
+    if linhas_de_dados == 0:
+        return f"{MSG_SEM_MOVIMENTACAO} (arquivo salvo só com o cabeçalho)"
     return "Arquivo exportado e movido com sucesso"
 
 

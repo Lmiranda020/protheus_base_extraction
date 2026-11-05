@@ -7,6 +7,10 @@ from openpyxl.utils import get_column_letter
 LOG_FOLDER   = "log"
 LOG_FILENAME = "log_automacao.xlsx"
 
+# Início da mensagem de sucesso quando o relatório veio sem dados (só cabeçalho).
+# Conta como sucesso (a filial não é reprocessada), mas aparece em destaque no e-mail.
+MSG_SEM_MOVIMENTACAO = "Sem movimentação na competência"
+
 # Paleta de cores
 COR_HEADER      = "1F4E79"   # azul escuro
 COR_SUCESSO     = "E2EFDA"   # verde claro
@@ -190,6 +194,8 @@ class LogExecucao:
             "erros"       : len(erro_lst),
             "filiais_ok"  : [r[4] for r in sucesso_lst],
             "filiais_err" : [r[4] for r in erro_lst],
+            "filiais_sem_mov": [r[4] for r in sucesso_lst
+                                if str(r[6]).startswith(MSG_SEM_MOVIMENTACAO)],
             "caminho_log" : self.caminho,
         }
         return resumo
